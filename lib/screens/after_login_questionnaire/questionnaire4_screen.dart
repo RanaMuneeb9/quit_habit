@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:quit_habit/utils/app_colors.dart';
-import 'package:quit_habit/screens/after_login_questionnaire/questionnaire2_screen.dart';
+import 'package:quit_habit/screens/after_login_questionnaire/questionnaire5_screen.dart';
 
-class Questionnaire1Screen extends StatefulWidget {
-  const Questionnaire1Screen({super.key});
+class Questionnaire4Screen extends StatefulWidget {
+  const Questionnaire4Screen({super.key});
 
   @override
-  State<Questionnaire1Screen> createState() => _Questionnaire1ScreenState();
+  State<Questionnaire4Screen> createState() => _Questionnaire4ScreenState();
 }
 
-class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
+class _Questionnaire4ScreenState extends State<Questionnaire4Screen> {
   String? _selectedOption;
 
   final List<String> _options = [
-    'Less than 1 year',
-    '1-5 years',
-    '5-10 years',
-    'More than 10 years',
+    'Improve my health',
+    'Save money',
+    'For my family',
+    'Better lifestyle',
   ];
 
   @override
@@ -39,7 +39,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Question 1 of 5',
+                    'Question 4 of 5',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -47,7 +47,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                     ),
                   ),
                   Text(
-                    '20%',
+                    '80%',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -74,7 +74,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                       duration: const Duration(milliseconds: 400),
                       curve: Curves.easeOutCubic,
                       height: 8,
-                      width: screenWidth * 0.2 - 48, // 20% minus padding
+                      width: screenWidth * 0.8 - 48, // 80% minus padding
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           begin: Alignment.centerLeft,
@@ -95,7 +95,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
 
               const SizedBox(height: 48),
 
-              // Cigarette Icon
+              // Health Icon
               Center(
                 child: Container(
                   width: 120,
@@ -130,7 +130,11 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                         ],
                       ),
                       child: Center(
-                        child: Text('🚬', style: const TextStyle(fontSize: 40)),
+                        child: Icon(
+                          Icons.health_and_safety_outlined,
+                          size: 40,
+                          color: AppColors.lightError, // Red shield color
+                        ),
                       ),
                     ),
                   ),
@@ -142,7 +146,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
               // Question
               Center(
                 child: Text(
-                  'How long have you been\nsmoking?',
+                  'What motivates you to\nquit smoking?',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.displaySmall?.copyWith(
                     fontSize: 26,
@@ -175,7 +179,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const Questionnaire2Screen(),
+                            builder: (context) => const Questionnaire5Screen(),
                           ),
                         );
                       },

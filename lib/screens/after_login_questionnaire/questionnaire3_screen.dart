@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quit_habit/utils/app_colors.dart';
-import 'package:quit_habit/screens/after_login_questionnaire/questionnaire3_screen.dart';
+import 'package:quit_habit/screens/after_login_questionnaire/questionnaire4_screen.dart';
 
-class Questionnaire2Screen extends StatefulWidget {
-  const Questionnaire2Screen({super.key});
+class Questionnaire3Screen extends StatefulWidget {
+  const Questionnaire3Screen({super.key});
 
   @override
-  State<Questionnaire2Screen> createState() => _Questionnaire2ScreenState();
+  State<Questionnaire3Screen> createState() => _Questionnaire3ScreenState();
 }
 
-class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
+class _Questionnaire3ScreenState extends State<Questionnaire3Screen> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   String _currentInput = "";
@@ -36,7 +36,7 @@ class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const Questionnaire3Screen(),
+        builder: (context) => const Questionnaire4Screen(),
       ),
     );
   }
@@ -62,7 +62,7 @@ class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Question 2 of 5', // Changed
+                    'Question 3 of 5', // Changed
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -70,7 +70,7 @@ class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
                     ),
                   ),
                   Text(
-                    '40%', // Changed
+                    '60%', // Changed
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -97,7 +97,7 @@ class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
                       duration: const Duration(milliseconds: 400),
                       curve: Curves.easeOutCubic,
                       height: 8,
-                      width: screenWidth * 0.4 - 48, // 40% minus padding
+                      width: screenWidth * 0.6 - 48, // 60% minus padding
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           begin: Alignment.centerLeft,
@@ -118,7 +118,7 @@ class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
 
               const SizedBox(height: 48),
 
-              // Icon (Changed to cigarette pack)
+              // Icon (Changed to money)
               Center(
                 child: Container(
                   width: 120,
@@ -153,9 +153,9 @@ class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
                         ],
                       ),
                       child: const Center(
-                        // Changed Icon (using smoking_rooms as placeholder)
+                        // Changed Icon
                         child: Icon(
-                          Icons.smoking_rooms,
+                          Icons.monetization_on_outlined,
                           size: 40,
                           color: AppColors.lightPrimary,
                         ),
@@ -170,7 +170,7 @@ class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
               // Question
               Center(
                 child: Text(
-                  'How many cigarettes do you smoke per day?', // Changed
+                  'How much money do you spend per day?', // Changed
                   textAlign: TextAlign.center,
                   style: theme.textTheme.displaySmall?.copyWith(
                     fontSize: 26,
@@ -193,7 +193,7 @@ class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
                 // Use standard number keyboard
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly, // Allow only digits
-                  LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+                  LengthLimitingTextInputFormatter(4), // Limit to 4 digits
                 ],
                 style: theme.textTheme.displayLarge?.copyWith(
                   fontWeight: FontWeight.w700,

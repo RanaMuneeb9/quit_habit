@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:quit_habit/utils/app_colors.dart';
-import 'package:quit_habit/screens/after_login_questionnaire/questionnaire2_screen.dart';
 
-class Questionnaire1Screen extends StatefulWidget {
-  const Questionnaire1Screen({super.key});
+class Questionnaire5Screen extends StatefulWidget {
+  const Questionnaire5Screen({super.key});
 
   @override
-  State<Questionnaire1Screen> createState() => _Questionnaire1ScreenState();
+  State<Questionnaire5Screen> createState() => _Questionnaire5ScreenState();
 }
 
-class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
+class _Questionnaire5ScreenState extends State<Questionnaire5Screen> {
   String? _selectedOption;
 
   final List<String> _options = [
-    'Less than 1 year',
-    '1-5 years',
-    '5-10 years',
-    'More than 10 years',
+    'In the morning',
+    'During work breaks',
+    'Social situations',
+    'When stressed',
   ];
 
   @override
@@ -39,7 +38,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Question 1 of 5',
+                    'Question 5 of 5',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -47,7 +46,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                     ),
                   ),
                   Text(
-                    '20%',
+                    '100%',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -74,7 +73,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                       duration: const Duration(milliseconds: 400),
                       curve: Curves.easeOutCubic,
                       height: 8,
-                      width: screenWidth * 0.2 - 48, // 20% minus padding
+                      width: screenWidth * 1.0 - 48, // 100% minus padding
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           begin: Alignment.centerLeft,
@@ -95,7 +94,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
 
               const SizedBox(height: 48),
 
-              // Cigarette Icon
+              // Clock Icon
               Center(
                 child: Container(
                   width: 120,
@@ -130,7 +129,11 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                         ],
                       ),
                       child: Center(
-                        child: Text('🚬', style: const TextStyle(fontSize: 40)),
+                        child: Icon(
+                          Icons.access_time_filled_rounded,
+                          size: 40,
+                          color: AppColors.lightTextPrimary,
+                        ),
                       ),
                     ),
                   ),
@@ -142,7 +145,7 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
               // Question
               Center(
                 child: Text(
-                  'How long have you been\nsmoking?',
+                  'When do you smoke\nthe most?',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.displaySmall?.copyWith(
                     fontSize: 26,
@@ -172,12 +175,10 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                         setState(() {
                           _selectedOption = option;
                         });
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const Questionnaire2Screen(),
-                          ),
-                        );
+                        // TODO: Add navigation to the main app (e.g., HomeScreen)
+                        // Future.delayed(const Duration(milliseconds: 300), () {
+                        //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+                        // });
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),

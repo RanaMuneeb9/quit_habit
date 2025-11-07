@@ -1,96 +1,81 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary Brand Colors
-  static const Color primaryBlue = Color(0xFF4C7EFF);
-  static const Color primaryPurple = Color(0xFF8B5CF6);
-  static const Color primaryGradientStart = Color(0xFF4C7EFF);
-  static const Color primaryGradientEnd = Color(0xFF8B5CF6);
-
-  // Accent Colors
-  static const Color accentOrange = Color(0xFFFF9500);
-  static const Color accentRed = Color(0xFFFF3B30);
-  static const Color accentGreen = Color(0xFF34C759);
-  static const Color accentTeal = Color(0xFF5AC8FA);
-
-  // Light Theme Colors
-  static const Color lightBackground = Color(0xFFF5F3FF);
+  // Light Mode Colors
+  static const Color lightBackground = Color(0xFFF5F7FA);
   static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightCardBackground = Color(0xFFFFFFFF);
+  static const Color lightPrimary = Color(0xFF4B7BFF);
+  static const Color lightPrimaryDark = Color(0xFF3D5CFF);
+  static const Color lightSecondary = Color(0xFF8B5CF6);
   static const Color lightTextPrimary = Color(0xFF1A1A1A);
-  static const Color lightTextSecondary = Color(0xFF8E8E93);
-  static const Color lightTextTertiary = Color(0xFFC7C7CC);
-  static const Color lightBorder = Color(0xFFE5E5EA);
-  static const Color lightInputBackground = Color(0xFFF7F8FA);
-  static const Color lightDivider = Color(0xFFE5E5EA);
-  static const Color lightShadow = Color(0x0D000000);
+  static const Color lightTextSecondary = Color(0xFF6B7280);
+  static const Color lightTextTertiary = Color(0xFF9CA3AF);
+  static const Color lightBorder = Color(0xFFE5E7EB);
+  static const Color lightInputBackground = Color(0xFFF9FAFB);
+  static const Color lightDivider = Color(0xFFE5E7EB);
+  static const Color lightSuccess = Color(0xFF10B981);
+  static const Color lightError = Color(0xFFEF4444);
+  static const Color lightWarning = Color(0xFFF59E0B);
 
-  // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF000000);
-  static const Color darkSurface = Color(0xFF1C1C1E);
-  static const Color darkCardBackground = Color(0xFF2C2C2E);
+  // Gradient Colors
+  static const Color gradientStart = Color(0xFFF5F3FF);
+  static const Color gradientMiddle = Color(0xFFEFF6FF);
+  static const Color gradientEnd = Color(0xFFEFF6FF);
+
+  // Dark Mode Colors
+  static const Color darkBackground = Color(0xFF0F1419);
+  static const Color darkSurface = Color(0xFF1A1F28);
+  static const Color darkSurfaceElevated = Color(0xFF252A35);
+  static const Color darkPrimary = Color(0xFF5B8BFF);
+  static const Color darkPrimaryDark = Color(0xFF4B7BFF);
+  static const Color darkSecondary = Color(0xFF9B6CF6);
   static const Color darkTextPrimary = Color(0xFFFFFFFF);
-  static const Color darkTextSecondary = Color(0xFF8E8E93);
-  static const Color darkTextTertiary = Color(0xFF48484A);
-  static const Color darkBorder = Color(0xFF38383A);
-  static const Color darkInputBackground = Color(0xFF1C1C1E);
-  static const Color darkDivider = Color(0xFF38383A);
-  static const Color darkShadow = Color(0x1A000000);
+  static const Color darkTextSecondary = Color(0xFFB0B8C4);
+  static const Color darkTextTertiary = Color(0xFF6B7280);
+  static const Color darkBorder = Color(0xFF2D3340);
+  static const Color darkInputBackground = Color(0xFF1F242E);
+  static const Color darkDivider = Color(0xFF2D3340);
+  static const Color darkSuccess = Color(0xFF10B981);
+  static const Color darkError = Color(0xFFEF4444);
+  static const Color darkWarning = Color(0xFFF59E0B);
 
-  // Success Rate Colors (for progress indicators)
-  static const Color successHigh = Color(0xFF34C759); // 85%+
-  static const Color successMedium = Color(0xFFFF9500); // 78-84%
-  static const Color successLow = Color(0xFFFF3B30); // Below 78%
+  // Common Colors
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color black = Color(0xFF000000);
+  static const Color transparent = Colors.transparent;
 
-  // Google Button
-  static const Color googleButtonBorder = Color(0xFFE5E5EA);
-  static const Color googleButtonBackground = Color(0xFFFFFFFF);
-
-  // Status Colors
-  static const Color error = Color(0xFFFF3B30);
-  static const Color success = Color(0xFF34C759);
-  static const Color warning = Color(0xFFFF9500);
-  static const Color info = Color(0xFF4C7EFF);
+  // Shadow Colors
+  static const Color lightShadow = Color.fromRGBO(0, 0, 0, 0.04);
+  static const Color mediumShadow = Color.fromRGBO(0, 0, 0, 0.08);
+  static const Color darkShadow = Color.fromRGBO(0, 0, 0, 0.12);
 
   // Overlay Colors
-  static const Color overlayLight = Color(0x0D000000);
-  static const Color overlayDark = Color(0x33000000);
+  static const Color lightOverlay = Color.fromRGBO(0, 0, 0, 0.5);
+  static const Color darkOverlay = Color.fromRGBO(0, 0, 0, 0.7);
 
-  // Gradients
+  // Linear Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFFF5F3FF), Color(0xFFEFF6FF)],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [gradientStart, gradientMiddle, gradientEnd],
   );
 
   static const LinearGradient progressGradient = LinearGradient(
-    colors: [Color(0xFFFF3B30), Color(0xFFFF9500)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
+    colors: [gradientStart, gradientEnd],
   );
 
-  // Button Gradients
-  static const LinearGradient buttonGradient = LinearGradient(
-    colors: [Color(0xFF4C7EFF), Color(0xFF8B5CF6)],
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
+  // Icon Background Glow
+  static const BoxShadow iconGlowLight = BoxShadow(
+    color: Color.fromRGBO(75, 123, 255, 0.15),
+    blurRadius: 24,
+    spreadRadius: 0,
   );
 
-  // Card Shadow
-  static List<BoxShadow> cardShadow = [
-    BoxShadow(color: lightShadow, blurRadius: 20, offset: const Offset(0, 4)),
-  ];
-
-  static List<BoxShadow> cardShadowDark = [
-    BoxShadow(color: darkShadow, blurRadius: 20, offset: const Offset(0, 4)),
-  ];
-
-  // Elevated Card Shadow (for selected states)
-  static List<BoxShadow> elevatedCardShadow = [
-    BoxShadow(
-      color: primaryBlue.withValues(alpha: 0.15),
-      blurRadius: 24,
-      offset: const Offset(0, 8),
-    ),
-  ];
+  static const BoxShadow iconGlowDark = BoxShadow(
+    color: Color.fromRGBO(91, 139, 255, 0.25),
+    blurRadius: 24,
+    spreadRadius: 0,
+  );
 }

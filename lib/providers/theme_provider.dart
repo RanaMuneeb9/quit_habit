@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemeProvider extends ChangeNotifier {
   static const String _themeModeKey = 'theme_mode';
   
-  final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
+  SharedPreferences? _prefs;
   ThemeMode _themeMode = ThemeMode.system;
 
   ThemeProvider() {
@@ -15,7 +15,8 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<void> _loadThemeMode() async {
     try {
-      final themeModeString = await _prefs.getString(_themeModeKey);
+      _prefs = await SharedPreferences.getInstance();
+      final themeModeString = _prefs?.getString(_themeModeKey);
       if (themeModeString != null) {
         _themeMode = ThemeMode.values.firstWhere(
           (mode) => mode.toString() == themeModeString,
@@ -36,7 +37,8 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      await _prefs.setString(_themeModeKey, mode.toString());
+      _prefs ??= await SharedPreferences.getInstance();
+      await _prefs?.setString(_themeModeKey, mode.toString());
     } catch (e) {
       // If saving fails, continue with the change
     }

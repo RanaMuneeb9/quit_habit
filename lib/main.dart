@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:quit_habit/screens/auth/login/login_screen.dart';
 import 'providers/theme_provider.dart';
 import 'utils/app_theme.dart';
 
@@ -23,7 +24,7 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             // themeMode: themeProvider.themeMode,
             themeMode: ThemeMode.light,
-            home: const HomePage(),
+            home: const LoginScreen(),
           );
         },
       ),

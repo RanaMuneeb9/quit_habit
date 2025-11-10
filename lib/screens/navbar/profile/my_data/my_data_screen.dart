@@ -19,39 +19,42 @@ class _MyDataScreenState extends State<MyDataScreen> {
         backgroundColor: AppColors.lightBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.lightTextPrimary),
+          // --- UPDATED ICON ---
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.lightTextPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        titleSpacing: 0, // Adjust spacing to match screenshot
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'My Data',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                color: AppColors.lightTextPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 22,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'Your smoking information',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.lightTextSecondary,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+        // --- REMOVED title and titleSpacing ---
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          // --- UPDATED Padding (top set to 0) ---
+          padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
+              // --- ADDED Title and Subtitle ---
+              Text(
+                'My Data',
+                style: theme.textTheme.displayMedium?.copyWith(
+                  color: AppColors.lightTextPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 28,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Your smoking information',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.lightTextSecondary,
+                  fontSize: 15,
+                ),
+              ),
+              // --- ADDED Padding from above ---
+              const SizedBox(height: 24),
 
               // 1. Info Box
               Container(

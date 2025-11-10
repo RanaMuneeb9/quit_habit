@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:quit_habit/screens/navbar/profile/faq/faq_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/my_data/my_data_screen.dart';
+import 'package:quit_habit/screens/navbar/profile/notifications/notifications_screen.dart';
+import 'package:quit_habit/screens/navbar/profile/redeem/redeem_code_screen.dart';
+import 'package:quit_habit/screens/navbar/profile/subscription_status/subscription_status_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -58,7 +62,7 @@ class ProfileScreen extends StatelessWidget {
                         PersistentNavBarNavigator.pushNewScreen(
                           context,
                           screen: const MyDataScreen(),
-                          withNavBar: true, // Show nav bar on the new screen
+                          withNavBar: false,
                           pageTransitionAnimation:
                               PageTransitionAnimation.cupertino,
                         );
@@ -68,7 +72,15 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.notifications_none_outlined,
                       iconColor: AppColors.lightWarning,
                       title: 'Notifications',
-                      onTap: () {},
+                      onTap: () {
+                        PersistentNavBarNavigator.pushNewScreen(
+                          context,
+                          screen: const NotificationsScreen(),
+                          withNavBar: false,
+                          pageTransitionAnimation:
+                              PageTransitionAnimation.cupertino,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -82,14 +94,30 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.diamond_outlined,
                       iconColor: AppColors.lightError,
                       title: 'Subscription Status',
-                      onTap: () {},
+                      onTap: () {
+                        PersistentNavBarNavigator.pushNewScreen(
+                          context,
+                          screen: const SubscriptionStatusScreen(),
+                          withNavBar: false,
+                          pageTransitionAnimation:
+                              PageTransitionAnimation.cupertino,
+                        );
+                      },
                       trailing: _buildProBadge(theme),
                     ),
                     _ProfileMenuItem(
                       icon: Icons.card_giftcard_outlined,
                       iconColor: AppColors.lightSuccess,
                       title: 'Redeem Code',
-                      onTap: () {},
+                      onTap: () {
+                        PersistentNavBarNavigator.pushNewScreen(
+                          context,
+                          screen: const RedeemCodeScreen(),
+                          withNavBar: false,
+                          pageTransitionAnimation:
+                              PageTransitionAnimation.cupertino,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -109,7 +137,15 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.help_outline,
                       iconColor: const Color(0xFF3F83F8), // Lighter blue
                       title: 'Help & FAQ',
-                      onTap: () {},
+                      onTap: () {
+                        PersistentNavBarNavigator.pushNewScreen(
+                          context,
+                          screen: const FaqScreen(),
+                          withNavBar: false,
+                          pageTransitionAnimation:
+                              PageTransitionAnimation.cupertino,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -119,12 +155,12 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 10), // Compacted
                 _buildSettingsCard(
                   children: [
-                    _ProfileMenuItem(
-                      icon: Icons.cloud_upload_outlined,
-                      iconColor: AppColors.lightPrimary,
-                      title: 'Online Backup',
-                      onTap: () {},
-                    ),
+                    // _ProfileMenuItem(
+                    //   icon: Icons.cloud_upload_outlined,
+                    //   iconColor: AppColors.lightPrimary,
+                    //   title: 'Online Backup',
+                    //   onTap: () {},
+                    // ),
                     _ProfileMenuItem(
                       icon: Icons.shield_outlined,
                       iconColor: AppColors.lightTextSecondary,

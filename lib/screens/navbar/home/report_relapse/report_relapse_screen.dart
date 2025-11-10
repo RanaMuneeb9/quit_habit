@@ -92,10 +92,12 @@ class _ReportRelapseScreenState extends State<ReportRelapseScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 16, 16),
       decoration: BoxDecoration(
-        color: AppColors.lightError.withOpacity(0.08),
+        // --- UPDATED: .withValues instead of .withOpacity ---
+        color: AppColors.lightError.withValues(alpha: 0.08),
         border: Border(
           bottom: BorderSide(
-            color: AppColors.lightError.withOpacity(0.2),
+            // --- UPDATED: .withValues instead of .withOpacity ---
+            color: AppColors.lightError.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -132,7 +134,7 @@ class _ReportRelapseScreenState extends State<ReportRelapseScreen> {
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 1.6,
+        childAspectRatio: 1.5,
       ),
       itemCount: _triggers.length,
       shrinkWrap: true,
@@ -158,10 +160,12 @@ class _ReportRelapseScreenState extends State<ReportRelapseScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.lightWarning.withOpacity(0.1),
+        // --- UPDATED: .withValues instead of .withOpacity ---
+        color: AppColors.lightWarning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.lightWarning.withOpacity(0.3),
+          // --- UPDATED: .withValues instead of .withOpacity ---
+          color: AppColors.lightWarning.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -217,7 +221,7 @@ class _ReportRelapseScreenState extends State<ReportRelapseScreen> {
         ),
         const SizedBox(width: 12),
 
-        // Confirm Button (Using lightError as per screenshot's semantic color)
+        // Confirm Button
         Expanded(
           child: SizedBox(
             height: 50,
@@ -225,7 +229,10 @@ class _ReportRelapseScreenState extends State<ReportRelapseScreen> {
               onPressed: _selectedTrigger == null ? null : _handleConfirm,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.lightError,
-                disabledBackgroundColor: AppColors.lightError.withOpacity(0.4),
+                // --- UPDATED: .withValues instead of .withOpacity ---
+                disabledBackgroundColor: AppColors.lightError.withValues(
+                  alpha: 0.4,
+                ),
               ),
               child: Text(
                 'Confirm',
@@ -245,10 +252,12 @@ class _ReportRelapseScreenState extends State<ReportRelapseScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.lightPrimary.withOpacity(0.08),
+        // --- UPDATED: .withValues instead of .withOpacity ---
+        color: AppColors.lightPrimary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.lightPrimary.withOpacity(0.2),
+          // --- UPDATED: .withValues instead of .withOpacity ---
+          color: AppColors.lightPrimary.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -291,10 +300,11 @@ class _TriggerOptionCard extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
+          // --- UPDATED: .withValues instead of .withOpacity ---
           color: isSelected
-              ? AppColors.lightPrimary.withOpacity(0.08)
+              ? AppColors.lightPrimary.withValues(alpha: 0.08)
               : AppColors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -304,14 +314,16 @@ class _TriggerOptionCard extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.lightPrimary.withOpacity(0.15),
+                    // --- UPDATED: .withValues instead of .withOpacity ---
+                    color: AppColors.lightPrimary.withValues(alpha: 0.15),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.02),
+                    // --- UPDATED: .withValues instead of .withOpacity ---
+                    color: AppColors.black.withValues(alpha: 0.02),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -320,15 +332,21 @@ class _TriggerOptionCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 32, color: color),
             const SizedBox(height: 12),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: color,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: color,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  height: 1.2,
+                ),
               ),
             ),
           ],

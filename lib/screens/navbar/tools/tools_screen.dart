@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:quit_habit/screens/navbar/tools/breathing/breathing_screen.dart';
+import 'package:quit_habit/screens/navbar/tools/meditation/meditation_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({super.key});
@@ -13,18 +14,34 @@ class _ToolsScreenState extends State<ToolsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            PersistentNavBarNavigator.pushNewScreen(
-              context,
-              screen: const BreathingScreen(),
-              withNavBar: false, // Hide nav bar on the relapse screen
-              pageTransitionAnimation: PageTransitionAnimation.sizeUp,
-            );
-          },
-          child: Text("Tools Screen"),
-        ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ElevatedButton(
+            onPressed: () {
+              PersistentNavBarNavigator.pushNewScreen(
+                context,
+                screen: const BreathingScreen(),
+                withNavBar: false, // Hide nav bar on the relapse screen
+                pageTransitionAnimation: PageTransitionAnimation.sizeUp,
+              );
+            },
+            child: Text("Breathing Screen"),
+          ),
+          SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () {
+              PersistentNavBarNavigator.pushNewScreen(
+                context,
+                screen: const MeditationScreen(),
+                withNavBar: false, // Hide nav bar on the relapse screen
+                pageTransitionAnimation: PageTransitionAnimation.sizeUp,
+              );
+            },
+            child: Text("Meditation Screen"),
+          ),
+        ],
       ),
     );
   }

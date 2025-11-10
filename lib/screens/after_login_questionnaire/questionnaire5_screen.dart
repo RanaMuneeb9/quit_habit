@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:quit_habit/screens/navbar/navbar.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:quit_habit/utils/navigation_utils.dart';
-import 'package:quit_habit/screens/navbar/home/home_screen.dart';
 
 class Questionnaire5Screen extends StatefulWidget {
   const Questionnaire5Screen({super.key});
@@ -185,7 +185,7 @@ class _Questionnaire5ScreenState extends State<Questionnaire5Screen> {
 
                         Navigator.pushReplacement(
                           context,
-                          createRightToLeftRoute(const HomeScreen()),
+                          createRightToLeftRoute(const NavBar()),
                         );
                       },
                       child: AnimatedContainer(

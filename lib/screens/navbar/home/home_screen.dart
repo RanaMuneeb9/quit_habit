@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:quit_habit/screens/navbar/home/report_relapse/report_relapse_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
@@ -218,11 +219,20 @@ class HomeScreen extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) => const ReportRelapseScreen(),
+                        //   ),
+                        // );
+
+                        PersistentNavBarNavigator.pushNewScreen(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const ReportRelapseScreen(),
-                          ),
+                          screen: const ReportRelapseScreen(),
+                          withNavBar:
+                              false, // Hide nav bar on the relapse screen
+                          pageTransitionAnimation:
+                              PageTransitionAnimation.cupertino,
                         );
                       },
                       style: TextButton.styleFrom(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quit_habit/utils/app_colors.dart';
+import 'package:quit_habit/utils/navigation_utils.dart';
+import 'package:quit_habit/screens/navbar/home/home_screen.dart';
 
 class Questionnaire5Screen extends StatefulWidget {
   const Questionnaire5Screen({super.key});
@@ -175,10 +177,11 @@ class _Questionnaire5ScreenState extends State<Questionnaire5Screen> {
                         setState(() {
                           _selectedOption = option;
                         });
-                        // TODO: Add navigation to the main app (e.g., HomeScreen)
-                        // Future.delayed(const Duration(milliseconds: 300), () {
-                        //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
-                        // });
+
+                        Navigator.pushReplacement(
+                          context,
+                          createRightToLeftRoute(const HomeScreen()),
+                        );
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),

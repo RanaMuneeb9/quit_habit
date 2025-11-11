@@ -523,13 +523,157 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   /// Builds the placeholder content for the "Available" tab
   Widget _buildAvailableTab(ThemeData theme) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 48.0),
-        child: Text(
-          'New challenges will be available here!',
-          style: TextStyle(color: AppColors.lightTextSecondary),
+    // --- UPDATED: Replaced placeholder with new UI ---
+    return Column(
+      children: [
+        // --- UPDATED: Now a list of individual cards ---
+        _buildAvailableChallengeCard(
+          theme,
+          icon: Icons.emoji_events_outlined,
+          iconColor: AppColors.lightSuccess,
+          title: 'First Month Victory',
+          description: 'Complete your first 30 days without smoking',
+          duration: '30 days',
+          reward: '🏆',
         ),
+        const SizedBox(height: 12), // Space between cards
+        _buildAvailableChallengeCard(
+          theme,
+          icon: Icons.people_outline,
+          iconColor: AppColors.lightPrimary,
+          title: 'Partner Challenge',
+          description: 'Complete 30 days with a friend for extra motivation',
+          duration: '30 days',
+          reward: '💎',
+        ),
+        const SizedBox(height: 12),
+        _buildAvailableChallengeCard(
+          theme,
+          icon: Icons.track_changes_outlined,
+          iconColor: AppColors.lightError,
+          title: 'Health Champion',
+          description: 'Track daily health improvements for 14 days',
+          duration: '14 days',
+          reward: '❤️',
+        ),
+        const SizedBox(height: 12),
+        _buildAvailableChallengeCard(
+          theme,
+          icon: Icons.savings_outlined,
+          iconColor: AppColors.lightWarning,
+          title: 'Money Saver',
+          description: 'Save \$100 by not buying cigarettes',
+          duration: 'Est. 20 days', // Example duration
+          reward: '💰',
+        ),
+        const SizedBox(height: 12),
+        // Re-use the Free Mode card from the Active tab
+        _buildFreeModeCard(theme),
+      ],
+    );
+  }
+
+  /// --- REPLACED: _buildAvailableChallengeItem with _buildAvailableChallengeCard ---
+  Widget _buildAvailableChallengeCard(
+    ThemeData theme, {
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String description,
+    required String duration,
+    required String reward,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.lightBorder, width: 1.5),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Column for Icon and Duration
+              Column(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: iconColor, size: 26),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+              const SizedBox(width: 12),
+              // Title and Description
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: AppColors.lightTextPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
+                      maxLines: 2,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Reward Emoji
+              Text(
+                reward,
+                style: const TextStyle(fontSize: 20), // Larger emoji
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Start Challenge Button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                    duration,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.lightTextSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              TextButton(
+                onPressed: () {
+                  // TODO: Handle Start Challenge
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Start Challenge →',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.lightPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

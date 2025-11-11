@@ -23,13 +23,13 @@ class ProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16), // Compacted
+                const SizedBox(height: 16),
                 // 1. Header
                 _buildHeader(theme),
-                const SizedBox(height: 20), // Compacted
+                const SizedBox(height: 16), // Reduced
                 // 2. Stats
                 _buildStats(theme),
-                const SizedBox(height: 20), // Compacted
+                const SizedBox(height: 16), // Reduced
                 // 3. Share Button
                 SizedBox(
                   width: double.infinity,
@@ -39,8 +39,8 @@ class ProfileScreen extends StatelessWidget {
                     label: const Text('Share Your Progress'),
                     style: theme.elevatedButtonTheme.style?.copyWith(
                       padding: WidgetStateProperty.all(
-                        // Compacted
-                        const EdgeInsets.symmetric(vertical: 14),
+                        // Reduced
+                        const EdgeInsets.symmetric(vertical: 12),
                       ),
                       backgroundColor: WidgetStateProperty.all(
                         AppColors.lightPrimary,
@@ -48,10 +48,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24), // Compacted
+                const SizedBox(height: 20), // Reduced
                 // 4. Account & Profile
                 _buildSectionHeader(theme, 'ACCOUNT & PROFILE'),
-                const SizedBox(height: 10), // Compacted
+                const SizedBox(height: 8), // Reduced
                 _buildSettingsCard(
                   children: [
                     _ProfileMenuItem(
@@ -84,10 +84,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20), // Compacted
+                const SizedBox(height: 16), // Reduced
                 // 5. Subscription
                 _buildSectionHeader(theme, 'SUBSCRIPTION'),
-                const SizedBox(height: 10), // Compacted
+                const SizedBox(height: 8), // Reduced
                 _buildSettingsCard(
                   children: [
                     _ProfileMenuItem(
@@ -121,10 +121,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20), // Compacted
+                const SizedBox(height: 16), // Reduced
                 // 6. Learning & Support
                 _buildSectionHeader(theme, 'LEARNING & SUPPORT'),
-                const SizedBox(height: 10), // Compacted
+                const SizedBox(height: 8), // Reduced
                 _buildSettingsCard(
                   children: [
                     _ProfileMenuItem(
@@ -149,10 +149,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20), // Compacted
+                const SizedBox(height: 16), // Reduced
                 // 7. Data & Privacy
                 _buildSectionHeader(theme, 'DATA & PRIVACY'),
-                const SizedBox(height: 10), // Compacted
+                const SizedBox(height: 8), // Reduced
                 _buildSettingsCard(
                   children: [
                     // _ProfileMenuItem(
@@ -175,10 +175,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20), // Compacted
+                const SizedBox(height: 16), // Reduced
                 // 8. About
                 _buildSectionHeader(theme, 'ABOUT'),
-                const SizedBox(height: 10), // Compacted
+                const SizedBox(height: 8), // Reduced
                 _buildSettingsCard(
                   children: [
                     _ProfileMenuItem(
@@ -195,10 +195,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20), // Compacted
+                const SizedBox(height: 16), // Reduced
                 // 9. Sign Out
                 _buildSignOutButton(theme),
-                const SizedBox(height: 20), // Compacted Bottom padding
+                const SizedBox(height: 16), // Reduced Bottom padding
               ],
             ),
           ),
@@ -212,23 +212,23 @@ class ProfileScreen extends StatelessWidget {
     return Row(
       children: [
         CircleAvatar(
-          radius: 32,
+          radius: 28, // Reduced
           backgroundColor: AppColors.lightPrimary.withOpacity(0.1),
           // In a real app, this would be an Image.network
           child: const Icon(
             Icons.person,
             color: AppColors.lightPrimary,
-            size: 36,
+            size: 32, // Reduced
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12), // Reduced
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Sarah Johnson', // Hardcoded from image
               style: theme.textTheme.headlineMedium?.copyWith(
-                fontSize: 22,
+                fontSize: 20, // Reduced
                 fontWeight: FontWeight.w700,
                 color: AppColors.lightTextPrimary,
               ),
@@ -238,7 +238,7 @@ class ProfileScreen extends StatelessWidget {
               'Yearly Pro Member', // Hardcoded from image
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: AppColors.lightTextSecondary,
-                fontSize: 15,
+                fontSize: 14, // Reduced
               ),
             ),
           ],
@@ -250,8 +250,7 @@ class ProfileScreen extends StatelessWidget {
   /// Builds the stats row (Days, Saved, Not Smoked)
   Widget _buildStats(ThemeData theme) {
     return Container(
-      // Compacted
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12), // Reduced
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
@@ -272,7 +271,11 @@ class ProfileScreen extends StatelessWidget {
 
   /// A vertical divider for the stats card
   Widget _buildStatDivider() {
-    return Container(width: 1.5, height: 40, color: AppColors.lightBorder);
+    return Container(
+      width: 1.5,
+      height: 32,
+      color: AppColors.lightBorder,
+    ); // Reduced
   }
 
   /// Builds the grey section header (e.g., "ACCOUNT & PROFILE")
@@ -335,7 +338,7 @@ class ProfileScreen extends StatelessWidget {
         separatorBuilder: (context, index) => const Divider(
           height: 1,
           color: AppColors.lightBorder,
-          indent: 72, // 16 (pad) + 40 (icon) + 16 (pad)
+          indent: 64, // 16 (pad) + 36 (icon) + 12 (pad)
         ),
       ),
     );
@@ -357,8 +360,10 @@ class ProfileScreen extends StatelessWidget {
           },
           borderRadius: BorderRadius.circular(15), // match parent
           child: Padding(
-            // Compacted
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 12,
+            ), // Reduced
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center, // Center the content
               children: [
@@ -402,7 +407,7 @@ class _StatItem extends StatelessWidget {
           style: theme.textTheme.headlineMedium?.copyWith(
             color: AppColors.lightTextPrimary,
             fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontSize: 18, // Reduced
           ),
         ),
         const SizedBox(height: 4),
@@ -442,20 +447,22 @@ class _ProfileMenuItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          // Compacted
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ), // Reduced
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 36, // Reduced
+                height: 36, // Reduced
                 decoration: BoxDecoration(
                   color: iconColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10), // Reduced
                 ),
-                child: Icon(icon, color: iconColor, size: 24),
+                child: Icon(icon, color: iconColor, size: 20), // Reduced
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12), // Reduced
               Expanded(
                 child: Text(
                   title,

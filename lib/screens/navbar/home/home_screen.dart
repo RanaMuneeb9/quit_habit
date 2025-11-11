@@ -28,14 +28,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20), // Reduced padding
+                const SizedBox(height: 16), // Compacted
                 _buildHeader(theme),
-                const SizedBox(height: 24), // Reduced padding
+                const SizedBox(height: 16), // Compacted
                 _buildStreakCard(theme),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16), // Compacted
                 _buildModeTabs(theme),
-                const SizedBox(height: 24),
-
+                const SizedBox(height: 16), // Compacted
                 // --- UPDATED: Swappable content based on tab ---
                 IndexedStack(
                   index: _selectedTabIndex,
@@ -44,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildChallengeModeView(theme),
                   ],
                 ),
-                const SizedBox(height: 24), // Bottom padding
+                const SizedBox(height: 16), // Compacted bottom padding
               ],
             ),
           ),
@@ -74,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         CircleAvatar(
           radius: 24,
-          backgroundColor: AppColors.lightPrimary.withOpacity(0.1),
+          backgroundColor: AppColors.lightPrimary.withAlpha(25), // 10%
           child: const Icon(
             Icons.person_outline,
             color: AppColors.lightPrimary,
@@ -89,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildStreakCard(ThemeData theme) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20), // Reduced padding
+      padding: const EdgeInsets.all(16), // Compacted
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -99,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.lightPrimary.withOpacity(0.3),
+            color: AppColors.lightPrimary.withAlpha(77), // 30%
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -114,31 +113,31 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 'CURRENT STREAK',
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: AppColors.white.withOpacity(0.8),
-                  fontSize: 12,
+                  color: AppColors.white.withAlpha(204), // 80%
+                  fontSize: 11, // Compacted
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.2,
                 ),
               ),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6), // Compacted
                 decoration: BoxDecoration(
-                  color: AppColors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.white.withAlpha(51), // 20%
+                  borderRadius: BorderRadius.circular(10), // Compacted
                 ),
                 child: const Icon(
                   Icons.emoji_events,
                   color: AppColors.white,
-                  size: 20,
+                  size: 18, // Compacted
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12), // Reduced padding
+          const SizedBox(height: 8), // Compacted
           Text(
             '14',
             style: theme.textTheme.displayLarge?.copyWith(
-              fontSize: 52, // Reduced font size
+              fontSize: 44, // Compacted
               fontWeight: FontWeight.w800,
               color: AppColors.white,
               height: 1.0,
@@ -147,12 +146,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             'Days Smoke-Free',
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: AppColors.white.withOpacity(0.9),
-              fontSize: 16,
+              color: AppColors.white.withAlpha(230), // 90%
+              fontSize: 15, // Compacted
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 20), // Reduced padding
+          const SizedBox(height: 16), // Compacted
           Row(
             children: [
               Expanded(
@@ -174,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// --- NEW: Builds the animated "Free Mode" / "Challenge Mode" tab switcher ---
   Widget _buildModeTabs(ThemeData theme) {
     return Container(
-      height: 44, // Reduced height
+      height: 40, // Compacted
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.lightInputBackground,
@@ -194,11 +193,11 @@ class _HomeScreenState extends State<HomeScreen> {
               height: double.infinity,
               decoration: BoxDecoration(
                 color: AppColors.white,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10), // Compacted
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.05),
-                    blurRadius: 10,
+                    color: AppColors.black.withAlpha(13), // 5%
+                    blurRadius: 8, // Compacted
                     offset: const Offset(0, 2),
                   ),
                 ],
@@ -232,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 250),
           style: theme.textTheme.labelLarge!.copyWith(
-            fontSize: 15,
+            fontSize: 14, // Compacted
             fontWeight: FontWeight.w600,
             color: isSelected
                 ? AppColors.lightPrimary
@@ -256,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               'Need a Distraction?',
               style: theme.textTheme.headlineMedium?.copyWith(
-                fontSize: 20,
+                fontSize: 18, // Compacted
                 fontWeight: FontWeight.w700,
                 color: AppColors.lightTextPrimary,
               ),
@@ -286,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12), // Compacted
         // Distraction Cards
         Row(
           children: [
@@ -315,24 +314,24 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20), // Compacted
         // Why This Matters Section
         Text(
           'Why This Matters',
           style: theme.textTheme.headlineMedium?.copyWith(
-            fontSize: 20,
+            fontSize: 18, // Compacted
             fontWeight: FontWeight.w700,
             color: AppColors.lightTextPrimary,
           ),
         ),
         const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.all(16), // Reduced padding
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.lightSuccess.withOpacity(0.08),
+            color: AppColors.lightSuccess.withAlpha(20), // 8%
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.lightSuccess.withOpacity(0.2),
+              color: AppColors.lightSuccess.withAlpha(51), // 20%
               width: 1,
             ),
           ),
@@ -377,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         // Active Challenge Section
         Container(
-          padding: const EdgeInsets.all(16), // Reduced padding
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(20),
@@ -389,10 +388,10 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   Container(
-                    width: 44, // Reduced size
-                    height: 44, // Reduced size
+                    width: 40, // Compacted
+                    height: 40, // Compacted
                     decoration: BoxDecoration(
-                      color: AppColors.lightPrimary.withOpacity(0.1),
+                      color: AppColors.lightPrimary.withAlpha(25), // 10%
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Center(
@@ -459,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     height: 8,
                     decoration: BoxDecoration(
-                      color: AppColors.lightBorder.withOpacity(0.3),
+                      color: AppColors.lightBorder.withAlpha(77), // 30%
                       borderRadius: BorderRadius.circular(100),
                     ),
                     child: FractionallySizedBox(
@@ -524,17 +523,17 @@ class _StatItem extends StatelessWidget {
         Text(
           value,
           style: theme.textTheme.headlineMedium?.copyWith(
-            fontSize: 18, // Reduced font size
+            fontSize: 18, // Compacted font size
             fontWeight: FontWeight.w700,
             color: AppColors.white,
           ),
         ),
-        const SizedBox(height: 2), // Reduced padding
+        const SizedBox(height: 2), // Compacted
         Text(
           label,
           style: theme.textTheme.bodySmall?.copyWith(
-            fontSize: 10, // Reduced font size
-            color: AppColors.white.withOpacity(0.8),
+            fontSize: 10, // Compacted font size
+            color: AppColors.white.withAlpha(204), // 80%
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -559,21 +558,21 @@ class _DistractionCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16), // Reduced padding
+      padding: const EdgeInsets.symmetric(vertical: 16), // Compacted
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withAlpha(25), // 10%
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        border: Border.all(color: color.withAlpha(51), width: 1), // 20%
       ),
       child: Column(
         children: [
           Container(
-            width: 44, // Reduced size
-            height: 44, // Reduced size
+            width: 44, // Compacted
+            height: 44, // Compacted
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            child: Icon(icon, color: AppColors.white, size: 22), // Reduced size
+            child: Icon(icon, color: AppColors.white, size: 22), // Compacted
           ),
-          const SizedBox(height: 10), // Reduced padding
+          const SizedBox(height: 10), // Compacted
           Text(
             label,
             style: theme.textTheme.bodyMedium?.copyWith(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:quit_habit/screens/navbar/home/report_relapse/report_relapse_screen.dart';
+import 'package:quit_habit/screens/navbar/tools/tools_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -24,7 +25,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 _buildStreakCard(context, theme),
                 const SizedBox(height: 24),
-                _buildDistractionSection(theme),
+                _buildDistractionSection(theme, context),
                 const SizedBox(height: 24),
                 _buildWeeklyProgress(theme),
                 const SizedBox(height: 24),
@@ -255,7 +256,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// Builds the "Need a Distraction?" section
-  Widget _buildDistractionSection(ThemeData theme) {
+  Widget _buildDistractionSection(ThemeData theme, BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -272,7 +273,12 @@ class HomeScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Navigate to Tools screen or a "View All" screen
+                PersistentNavBarNavigator.pushNewScreen(
+                  context,
+                  screen: const ToolsScreen(),
+                  withNavBar: false,
+                  pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                );
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,

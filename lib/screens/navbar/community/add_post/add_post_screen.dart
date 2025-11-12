@@ -10,7 +10,19 @@ class AddPostScreen extends StatefulWidget {
 
 class _AddPostScreenState extends State<AddPostScreen> {
   final TextEditingController _postController = TextEditingController();
-  bool _showStreak = true;
+  bool _showStreak = false; // Default to false as per image
+  int _charCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Add listener to update character count
+    _postController.addListener(() {
+      setState(() {
+        _charCount = _postController.text.length;
+      });
+    });
+  }
 
   @override
   void dispose() {
@@ -24,6 +36,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.lightBackground,
+      // --- NO AppBar ---
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -32,15 +45,17 @@ class _AddPostScreenState extends State<AddPostScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
-                _buildHeader(theme),
-                const SizedBox(height: 16),
+                _buildHeader(theme), // This is the top badges row
+                const SizedBox(height: 24),
+                // --- This is the custom app bar row from the design ---
                 _buildCustomAppBar(context, theme),
                 const SizedBox(height: 24),
-                _buildTextField(theme),
+                _buildShowStreakToggle(theme), // Streak card
                 const SizedBox(height: 16),
-                _buildShowStreakToggle(theme),
+                _buildTextField(theme), // "Your Name" text field card
+                const SizedBox(height: 16),
+                _buildCommunityGuidelines(theme), // Guidelines card
                 const SizedBox(height: 24),
-                _buildPostButton(theme),
               ],
             ),
           ),
@@ -136,120 +151,371 @@ class _AddPostScreenState extends State<AddPostScreen> {
     );
   }
 
-  /// Builds the custom app bar with "New Post" title and "Cancel" button
+  /// --- NEW: Builds the custom app bar row ---
   Widget _buildCustomAppBar(BuildContext context, ThemeData theme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // Back Button
+        IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.lightTextPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        // Title
         Text(
           'New Post',
-          style: theme.textTheme.displaySmall?.copyWith(
+          style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            fontSize: 28,
+            fontSize: 20,
           ),
         ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            'Cancel',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: AppColors.lightPrimary,
-              fontWeight: FontWeight.w600,
+        // Post Button
+        ElevatedButton.icon(
+          onPressed: () {
+            // TODO: Handle post logic
+            Navigator.pop(context);
+          },
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('Post'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.lightPrimary,
+            foregroundColor: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            // Set minimumSize to zero to let the button size itself
+            minimumSize: Size.zero,
           ),
         ),
       ],
     );
   }
 
-  /// Builds the main text input field
+  /// Builds the main text input field card
   Widget _buildTextField(ThemeData theme) {
     return Container(
-      height: 150, // Give the text field some height
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.lightBorder, width: 1.5),
       ),
-      child: TextField(
-        controller: _postController,
-        maxLines: null, // Allows the text field to expand
-        keyboardType: TextInputType.multiline,
-        style: theme.textTheme.bodyLarge?.copyWith(
-          color: AppColors.lightTextPrimary,
-          fontSize: 15,
-        ),
-        decoration: InputDecoration(
-          hintText: "What's on your mind?",
-          hintStyle: theme.textTheme.bodyLarge?.copyWith(
-            color: AppColors.lightTextTertiary,
-            fontSize: 15,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.lightPrimary.withOpacity(0.1),
+                child: Text(
+                  'YU', // Placeholder
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: AppColors.lightPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your Name', // Placeholder
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: AppColors.lightTextPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Posting publicly',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.lightTextSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-        ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _postController,
+            maxLines: 5, // Give it a decent starting size
+            maxLength: 500,
+            keyboardType: TextInputType.multiline,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: AppColors.lightTextPrimary,
+              fontSize: 15,
+            ),
+            decoration: InputDecoration(
+              hintText: "Share your thoughts, progress, or ask for support...",
+              hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                color: AppColors.lightTextTertiary,
+                fontSize: 15,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+              counterText: '', // We'll add our own counter
+            ),
+          ),
+          const Divider(height: 24, color: AppColors.lightBorder),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '$_charCount/500 characters',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.lightTextTertiary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Builds the "Show Streak" toggle switch
+  /// Builds the "Show Streak" toggle switch and the streak info
   Widget _buildShowStreakToggle(ThemeData theme) {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.lightBorder, width: 1.5),
       ),
-      child: SwitchListTile(
-        value: _showStreak,
-        onChanged: (val) {
-          setState(() {
-            _showStreak = val;
-          });
-        },
-        title: Text(
-          'Show Streak',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: AppColors.lightTextPrimary,
-            fontWeight: FontWeight.w600,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: AppColors.badgeOrange,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: AppColors.lightWarning,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Show Streak',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: AppColors.lightTextPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Display your current progress',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.lightTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _showStreak,
+                onChanged: (val) {
+                  setState(() {
+                    _showStreak = val;
+                  });
+                },
+                activeColor: AppColors.lightPrimary,
+              ),
+            ],
           ),
-        ),
-        subtitle: Text(
-          'Show your 34 day streak on this post', // Hardcoded from design
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppColors.lightTextSecondary,
+
+          // --- This is the part to show/hide ---
+          AnimatedCrossFade(
+            firstChild: Container(), // Empty container when hidden
+            secondChild: _buildStreakDetails(
+              theme,
+            ), // Streak details when shown
+            crossFadeState: _showStreak
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
           ),
-        ),
-        activeColor: AppColors.lightPrimary,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        ],
       ),
     );
   }
 
-  /// Builds the "Post" button
-  Widget _buildPostButton(ThemeData theme) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          // TODO: Implement post logic
-          Navigator.pop(context); // Close screen after posting
-        },
-        style: theme.elevatedButtonTheme.style?.copyWith(
-          minimumSize: WidgetStateProperty.all(const Size(double.infinity, 50)),
-        ),
-        child: Text(
-          'Post',
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+  /// Helper widget for the streak details (shown when toggle is on)
+  Widget _buildStreakDetails(ThemeData theme) {
+    return Column(
+      children: [
+        const Divider(height: 24, color: AppColors.lightBorder),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.lightBlueBackground,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Current Streak',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.lightTextSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department_rounded,
+                          color: AppColors.lightWarning,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '4 days', // Hardcoded from design
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: AppColors.lightWarning,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Weekday indicators
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _WeekDay(day: 'Thu', status: 'done'),
+                  _WeekDay(day: 'Fri', status: 'missed'),
+                  _WeekDay(day: 'Sat', status: 'done'),
+                  _WeekDay(day: 'Sun', status: 'done'),
+                  _WeekDay(day: 'Mon', status: 'done'),
+                  _WeekDay(day: 'Tue', status: 'future'),
+                  _WeekDay(day: 'Wed', status: 'future'),
+                ],
+              ),
+            ],
           ),
         ),
+      ],
+    );
+  }
+
+  /// Builds the "Community Guidelines" card
+  Widget _buildCommunityGuidelines(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.lightPrimary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.lightPrimary.withOpacity(0.2),
+          width: 1,
+        ),
       ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline,
+            color: AppColors.lightPrimary,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Be respectful and Share your experiences to help others on their journey',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.lightTextPrimary,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Helper widget for each day in the weekly progress bar
+class _WeekDay extends StatelessWidget {
+  final String day;
+  final String status; // 'done', 'missed', 'pending', 'future'
+
+  const _WeekDay({required this.day, required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Color bgColor;
+    Widget icon;
+
+    switch (status) {
+      case 'done':
+        bgColor = AppColors.lightPrimary;
+        icon = const Icon(Icons.check, color: AppColors.white, size: 16);
+        break;
+      case 'missed':
+        bgColor = AppColors.lightError;
+        icon = const Icon(Icons.close, color: AppColors.white, size: 16);
+        break;
+      case 'pending':
+        bgColor = AppColors.lightWarning;
+        icon = const Icon(
+          Icons.nightlight_round,
+          color: AppColors.white,
+          size: 14,
+        );
+        break;
+      default: // 'future'
+        bgColor = AppColors.lightBorder.withOpacity(0.5);
+        icon = Container();
+        break;
+    }
+
+    return Column(
+      children: [
+        Text(
+          day,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: AppColors.lightTextSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+          child: Center(child: icon),
+        ),
+      ],
     );
   }
 }

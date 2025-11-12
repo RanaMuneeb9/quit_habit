@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:quit_habit/screens/navbar/community/community_home_screen.dart';
 import 'package:quit_habit/screens/navbar/goals/goals_screen.dart';
 import 'package:quit_habit/screens/navbar/home/home_screen.dart';
 import 'package:quit_habit/screens/navbar/plan/plan_screen.dart';
@@ -58,7 +59,7 @@ class NavBar extends StatelessWidget {
     return [
       const HomeScreen(),
       const GoalsScreen(),
-      const ToolsScreen(),
+      const CommunityHomeScreen(),
       const PlanScreen(),
       const ProfileScreen(),
     ];
@@ -87,8 +88,8 @@ class NavBar extends StatelessWidget {
         ),
       ),
       PersistentBottomNavBarItem(
-        icon: const Icon(Icons.auto_awesome_rounded),
-        title: "Tools",
+        icon: const Icon(Icons.people_rounded),
+        title: "Community",
         activeColorPrimary: AppColors.lightPrimary,
         inactiveColorPrimary: AppColors.lightTextTertiary,
         textStyle: const TextStyle(

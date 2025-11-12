@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
@@ -59,17 +60,36 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   const SizedBox(height: 16),
 
                   // Icon
+                  // Container(
+                  //   width: 80,
+                  //   height: 80,
+                  //   decoration: BoxDecoration(
+                  //     color: AppColors.lightPrimary.withValues(alpha: 0.1),
+                  //     borderRadius: BorderRadius.circular(40),
+                  //   ),
+                  //   child: Icon(
+                  //     _emailSent ? Icons.mark_email_read : Icons.lock_reset,
+                  //     size: 40,
+                  //     color: AppColors.lightPrimary,
+                  //   ),
+                  // ),
                   Container(
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: AppColors.lightPrimary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(40),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.lightPrimary.withValues(alpha: 0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                    child: Icon(
-                      _emailSent ? Icons.mark_email_read : Icons.lock_reset,
-                      size: 40,
-                      color: AppColors.lightPrimary,
+                    child: SvgPicture.asset(
+                      'images/icons/app_icon.svg',
+                      width: 130,
+                      height: 130,
                     ),
                   ),
 

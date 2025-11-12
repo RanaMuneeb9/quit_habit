@@ -33,30 +33,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
 
                 // App Icon
                 Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.lightPrimary.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
+                  width: 80,
+                  height: 80,
                   child: SvgPicture.asset(
                     'images/icons/app_icon.svg',
-                    width: 130,
-                    height: 130,
                   ),
                 ),
-
-                const SizedBox(height: 4),
 
                 // Title
                 Text(

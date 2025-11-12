@@ -61,30 +61,16 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 18),
 
                   // App Icon
-                  Container(
+                  SizedBox(
                     width: 80,
                     height: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.lightPrimary.withValues(alpha: 0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
                     child: SvgPicture.asset(
                       'images/icons/app_icon.svg',
-                      width: 130,
-                      height: 130,
                     ),
                   ),
-
-                  const SizedBox(height: 6),
 
                   // Title
                   Text(

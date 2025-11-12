@@ -3,17 +3,8 @@ import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:quit_habit/screens/navbar/home/report_relapse/report_relapse_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
-// --- UPDATED: Converted to StatefulWidget ---
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  // 0 = Free Mode, 1 = Challenge Mode
-  int _selectedTabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -28,22 +19,21 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16), // Compacted
+                const SizedBox(height: 16),
                 _buildHeader(theme),
-                const SizedBox(height: 16), // Compacted
-                _buildStreakCard(theme),
-                const SizedBox(height: 16), // Compacted
-                _buildModeTabs(theme),
-                const SizedBox(height: 16), // Compacted
-                // --- UPDATED: Swappable content based on tab ---
-                IndexedStack(
-                  index: _selectedTabIndex,
-                  children: [
-                    _buildFreeModeView(theme),
-                    _buildChallengeModeView(theme),
-                  ],
-                ),
-                const SizedBox(height: 16), // Compacted bottom padding
+                const SizedBox(height: 24),
+                _buildStreakCard(context, theme),
+                const SizedBox(height: 24),
+                _buildDistractionSection(theme),
+                const SizedBox(height: 24),
+                _buildWeeklyProgress(theme),
+                const SizedBox(height: 24),
+                _buildActiveChallenge(theme),
+                const SizedBox(height: 24),
+                _buildTodaysPlan(theme),
+                const SizedBox(height: 24),
+                _buildPremiumCard(theme),
+                const SizedBox(height: 24), // Bottom padding
               ],
             ),
           ),
@@ -52,222 +42,237 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Builds the top header with "QUIT" and profile icon
+  /// Builds the top header with badges and Pro button
   Widget _buildHeader(ThemeData theme) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'QUIT',
-              style: theme.textTheme.displayLarge?.copyWith(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: AppColors.lightTextPrimary,
-                letterSpacing: -1,
-              ),
-            ),
-          ],
+        _buildStatBadge(
+          theme,
+          icon: Icons.health_and_safety_outlined, // Corrected Icon
+          label: '0%',
+          bgColor: AppColors.badgeGreen, // Corrected Color
+          iconColor: AppColors.lightSuccess, // Corrected Color
         ),
-        CircleAvatar(
-          radius: 24,
-          backgroundColor: AppColors.lightPrimary.withAlpha(25), // 10%
-          child: const Icon(
-            Icons.person_outline,
-            color: AppColors.lightPrimary,
-            size: 28,
+        const SizedBox(width: 8),
+        _buildStatBadge(
+          theme,
+          icon: Icons.diamond_outlined,
+          label: '1',
+          bgColor: AppColors.badgeBlue, // Corrected Color
+          iconColor: AppColors.lightPrimary, // Corrected Color
+        ),
+        const SizedBox(width: 8),
+        _buildStatBadge(
+          theme,
+          icon: Icons.monetization_on_outlined,
+          label: '0',
+          bgColor: AppColors.badgeOrange, // Corrected Color
+          iconColor: AppColors.lightWarning, // Corrected Color
+        ),
+        const Spacer(),
+        // Pro Button
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.lightWarning,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.workspace_premium_outlined,
+                color: AppColors.white,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Pro',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  /// Builds the main gradient streak card
-  Widget _buildStreakCard(ThemeData theme) {
+  /// Helper for the small stat badges in the header
+  Widget _buildStatBadge(
+    ThemeData theme, {
+    required IconData icon,
+    required String label,
+    required Color bgColor,
+    required Color iconColor,
+  }) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16), // Compacted
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF2B7FFF), Color(0xFFAD46FF)],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.lightPrimary.withAlpha(77), // 30%
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'CURRENT STREAK',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: AppColors.white.withAlpha(204), // 80%
-                  fontSize: 11, // Compacted
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(6), // Compacted
-                decoration: BoxDecoration(
-                  color: AppColors.white.withAlpha(51), // 20%
-                  borderRadius: BorderRadius.circular(10), // Compacted
-                ),
-                child: const Icon(
-                  Icons.emoji_events,
-                  color: AppColors.white,
-                  size: 18, // Compacted
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8), // Compacted
+          Icon(icon, color: iconColor, size: 16),
+          const SizedBox(width: 4),
           Text(
-            '14',
-            style: theme.textTheme.displayLarge?.copyWith(
-              fontSize: 44, // Compacted
-              fontWeight: FontWeight.w800,
-              color: AppColors.white,
-              height: 1.0,
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: AppColors.lightTextPrimary,
+              fontWeight: FontWeight.w600,
             ),
-          ),
-          Text(
-            'Days Smoke-Free',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: AppColors.white.withAlpha(230), // 90%
-              fontSize: 15, // Compacted
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 16), // Compacted
-          Row(
-            children: [
-              Expanded(
-                child: _StatItem(value: '130', label: 'Cigarettes Not Smoked'),
-              ),
-              Expanded(
-                child: _StatItem(value: '\$65', label: 'Money Saved'),
-              ),
-              Expanded(
-                child: _StatItem(value: '+12%', label: 'Health Gained'),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  /// --- NEW: Builds the animated "Free Mode" / "Challenge Mode" tab switcher ---
-  Widget _buildModeTabs(ThemeData theme) {
-    return Container(
-      height: 40, // Compacted
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.lightInputBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Stack(
-        children: [
-          // Animated pill
-          AnimatedAlign(
-            alignment: _selectedTabIndex == 0
-                ? Alignment.centerLeft
-                : Alignment.centerRight,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            child: Container(
-              width: (MediaQuery.of(context).size.width - 48 - 8) / 2,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(10), // Compacted
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black.withAlpha(13), // 5%
-                    blurRadius: 8, // Compacted
-                    offset: const Offset(0, 2),
+  /// Builds the main "Day 34" streak card
+  Widget _buildStreakCard(BuildContext context, ThemeData theme) {
+    return Stack(
+      clipBehavior: Clip.none, // Allow overlay to show
+      children: [
+        // Main Card Content
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.lightBlueBackground,
+            borderRadius: BorderRadius.circular(24),
+            // --- ADDED: Border ---
+            border: Border.all(
+              color: AppColors.lightBorder.withOpacity(0.7),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Keep Going!',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: AppColors.lightTextPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.lightBorder),
+                    ),
+                    child: const Icon(
+                      Icons.military_tech_outlined,
+                      color: AppColors.lightWarning,
+                      size: 24,
+                    ),
                   ),
                 ],
               ),
-            ),
-          ),
-          // Text buttons
-          Row(
-            children: [
-              Expanded(child: _buildTabItem(theme, 'Free Mode', 0)),
-              Expanded(child: _buildTabItem(theme, 'Challenge Mode', 1)),
+              const SizedBox(height: 4),
+              Text(
+                'Day 34',
+                style: theme.textTheme.displayLarge?.copyWith(
+                  fontSize: 44,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.lightTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    // --- CORRECTED: OutlinedButton Styling ---
+                    child: OutlinedButton(
+                      onPressed: () {
+                        // TODO: Handle "Complete" day
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: AppColors.lightPrimary,
+                          width: 1.5,
+                        ),
+                        minimumSize: const Size(0, 48),
+                        backgroundColor: AppColors.white,
+                        foregroundColor: AppColors.lightPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Complete',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: AppColors.lightPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        PersistentNavBarNavigator.pushNewScreen(
+                          context,
+                          screen: const ReportRelapseScreen(),
+                          withNavBar: false,
+                          pageTransitionAnimation:
+                              PageTransitionAnimation.cupertino,
+                        );
+                      },
+                      style: theme.elevatedButtonTheme.style?.copyWith(
+                        minimumSize: WidgetStateProperty.all(const Size(0, 48)),
+                      ),
+                      child: const Text('Relapse'),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  /// --- NEW: Helper for a single tab item ---
-  Widget _buildTabItem(ThemeData theme, String title, int index) {
-    final bool isSelected = _selectedTabIndex == index;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedTabIndex = index;
-        });
-      },
-      behavior: HitTestBehavior.opaque,
-      child: Center(
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 250),
-          style: theme.textTheme.labelLarge!.copyWith(
-            fontSize: 14, // Compacted
-            fontWeight: FontWeight.w600,
-            color: isSelected
-                ? AppColors.lightPrimary
-                : AppColors.lightTextSecondary,
-          ),
-          child: Text(title),
         ),
-      ),
+        // --- ADDED: Circular Overlay ---
+        Positioned(
+          top: -20,
+          right: -20,
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  /// --- NEW: Builds the content for "Free Mode" ---
-  Widget _buildFreeModeView(ThemeData theme) {
+  /// Builds the "Need a Distraction?" section
+  Widget _buildDistractionSection(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Need a Distraction Section
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Need a Distraction?',
               style: theme.textTheme.headlineMedium?.copyWith(
-                fontSize: 18, // Compacted
+                fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: AppColors.lightTextPrimary,
               ),
             ),
             TextButton(
               onPressed: () {
-                PersistentNavBarNavigator.pushNewScreen(
-                  context,
-                  screen: const ReportRelapseScreen(),
-                  withNavBar: false,
-                  pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                );
+                // TODO: Navigate to Tools screen or a "View All" screen
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
@@ -275,9 +280,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                'See All',
+                'View All →',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: AppColors.lightPrimary,
                 ),
@@ -285,23 +290,24 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12), // Compacted
-        // Distraction Cards
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
               child: _DistractionCard(
                 icon: Icons.air,
                 label: 'Breathing',
-                color: const Color(0xFFFF6B6B),
+                bgColor: AppColors.lightRed.withOpacity(0.1),
+                iconBgColor: AppColors.lightRed,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _DistractionCard(
-                icon: Icons.trending_up,
+                icon: Icons.fitness_center_outlined,
                 label: 'Exercise',
-                color: const Color(0xFF4B7BFF),
+                bgColor: AppColors.lightBlueDistraction, // Corrected Color
+                iconBgColor: AppColors.lightPrimary,
               ),
             ),
             const SizedBox(width: 12),
@@ -309,60 +315,48 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _DistractionCard(
                 icon: Icons.self_improvement,
                 label: 'Meditate',
-                color: const Color(0xFF10B981),
+                bgColor: AppColors.lightGreenBackground, // Corrected Color
+                iconBgColor: AppColors.lightSuccess,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 20), // Compacted
-        // Why This Matters Section
+      ],
+    );
+  }
+
+  /// Builds the "Weekly Progress" section
+  Widget _buildWeeklyProgress(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Text(
-          'Why This Matters',
+          'Weekly Progress',
           style: theme.textTheme.headlineMedium?.copyWith(
-            fontSize: 18, // Compacted
+            fontSize: 20,
             fontWeight: FontWeight.w700,
             color: AppColors.lightTextPrimary,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           decoration: BoxDecoration(
-            color: AppColors.lightSuccess.withAlpha(20), // 8%
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.lightSuccess.withAlpha(51), // 20%
-              width: 1,
-            ),
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.lightBorder, width: 1.5),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // --- THIS IS THE CORRECT CONTENT ---
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'After 2 weeks smoke-free, your lung function increases by up to 30% and your circulation improves.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
-                  color: AppColors.lightTextPrimary,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () {},
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'Learn More..',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.lightPrimary,
-                  ),
-                ),
-              ),
+              _WeekDay(day: 'Thu', status: 'done'),
+              _WeekDay(day: 'Fri', status: 'missed'),
+              _WeekDay(day: 'Sat', status: 'done'),
+              _WeekDay(day: 'Sun', status: 'done'),
+              _WeekDay(day: 'Mon', status: 'pending'),
+              _WeekDay(day: 'Tue', status: 'future'),
+              _WeekDay(day: 'Wed', status: 'future'),
             ],
           ),
         ),
@@ -370,134 +364,185 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// --- NEW: Builds the content for "Challenge Mode" ---
-  Widget _buildChallengeModeView(ThemeData theme) {
+  /// Builds the "Active Challenge" card
+  Widget _buildActiveChallenge(ThemeData theme) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Active Challenge Section
+        Text(
+          'Active Challenge',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AppColors.lightTextPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(16),
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias, // Ensures rounded corners for children
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.lightBorder, width: 1.5),
+          ),
+          // --- THIS IS WHERE IntrinsicHeight WAS NEEDED ---
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Blue side bar
+                Container(width: 8, color: AppColors.lightPrimary),
+                // Card Content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // --- CORRECTED: Centered Content ---
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.electric_bolt_outlined, // Corrected Icon
+                              color: AppColors.lightPrimary,
+                              size: 24,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '7-Day Warrior',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                color: AppColors.lightTextPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Stay smoke-free for 7 consecutive days',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16), // Spacer
+                        // --- Progress Bar Section (Stays left-aligned) ---
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Progress',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              '71%',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.lightPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: 0.71,
+                          backgroundColor: AppColors.lightBorder.withOpacity(
+                            0.5,
+                          ),
+                          color: AppColors.lightPrimary,
+                          borderRadius: BorderRadius.circular(10),
+                          minHeight: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the "Today's Plan" section
+  Widget _buildTodaysPlan(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Today's Plan",
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.lightTextPrimary,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                // TODO: Navigate to Plan screen
+              },
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'View All →',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.lightPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.lightBorder, width: 1.5),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // --- CORRECTED: Centered Row ---
               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 40, // Compacted
-                    height: 40, // Compacted
-                    decoration: BoxDecoration(
-                      color: AppColors.lightPrimary.withAlpha(25), // 10%
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.local_fire_department,
-                        color: AppColors.lightPrimary,
-                        size: 24,
-                      ),
-                    ),
+                  const Icon(
+                    Icons.local_florist_outlined,
+                    color: AppColors.lightSuccess,
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Active Challenge: 3-Day Breath Fresh',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.lightTextPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'With Alex',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontSize: 13,
-                            color: AppColors.lightTextSecondary,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    'Day 3 • Active',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: AppColors.lightTextPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              // Progress Bar
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '2 of 3 days completed',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 12,
-                          color: AppColors.lightTextSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        '66%',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.lightPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.lightBorder.withAlpha(77), // 30%
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: 0.66,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.lightPrimary,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              const Divider(height: 32, color: AppColors.lightBorder),
+              _buildPlanItem(
+                theme,
+                text: 'Make commitment to quit smoking day by day.',
+                isDone: true,
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.lightPrimary,
-                    foregroundColor: AppColors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                    ), // Reduced padding
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    'Continue Challenge',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+              _buildPlanItem(
+                theme,
+                text: 'Establish immediate health benefits with quit habit',
+                isDone: true,
               ),
             ],
           ),
@@ -505,52 +550,102 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-}
 
-class _StatItem extends StatelessWidget {
-  final String value;
-  final String label;
-
-  const _StatItem({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  /// Helper for a single item in "Today's Plan"
+  Widget _buildPlanItem(
+    ThemeData theme, {
+    required String text,
+    required bool isDone,
+  }) {
+    return Row(
       children: [
-        Text(
-          value,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontSize: 18, // Compacted font size
-            fontWeight: FontWeight.w700,
-            color: AppColors.white,
-          ),
+        Icon(
+          isDone
+              ? Icons.check_circle_rounded
+              : Icons.radio_button_unchecked_rounded,
+          color: isDone ? AppColors.lightSuccess : AppColors.lightBorder,
+          size: 24,
         ),
-        const SizedBox(height: 2), // Compacted
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontSize: 10, // Compacted font size
-            color: AppColors.white.withAlpha(204), // 80%
-            fontWeight: FontWeight.w500,
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            text,
+            // --- CORRECTED: Font Size ---
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.lightTextPrimary,
+              fontWeight: FontWeight.w500,
+              fontSize: 14, // Reduced from 15
+            ),
           ),
         ),
       ],
     );
   }
+
+  /// Builds the "Unlock Premium" card
+  Widget _buildPremiumCard(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.lightOrangeBackground, // Corrected Color
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.workspace_premium_outlined,
+            color: AppColors.lightWarning,
+            size: 32,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Unlock Premium',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              color: AppColors.lightTextPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Get unlimited challenges, advanced analytics, and exclusive tools!',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.lightTextSecondary,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: Navigate to subscription screen
+            },
+            style: theme.elevatedButtonTheme.style?.copyWith(
+              backgroundColor: WidgetStateProperty.all(AppColors.lightWarning),
+              foregroundColor: WidgetStateProperty.all(AppColors.white),
+              minimumSize: WidgetStateProperty.all(
+                const Size(double.infinity, 50),
+              ),
+            ),
+            child: const Text('Upgrade to Pro'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
+/// Helper widget for the Distraction Cards
 class _DistractionCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
+  final Color bgColor;
+  final Color iconBgColor;
 
   const _DistractionCard({
     required this.icon,
     required this.label,
-    required this.color,
+    required this.bgColor,
+    required this.iconBgColor,
   });
 
   @override
@@ -558,31 +653,91 @@ class _DistractionCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16), // Compacted
+      padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
-        color: color.withAlpha(25), // 10%
+        color: bgColor, // Corrected
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withAlpha(51), width: 1), // 20%
+        border: Border.all(color: iconBgColor.withOpacity(0.2), width: 1),
       ),
       child: Column(
         children: [
           Container(
-            width: 44, // Compacted
-            height: 44, // Compacted
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            child: Icon(icon, color: AppColors.white, size: 22), // Compacted
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppColors.white, size: 24),
           ),
-          const SizedBox(height: 10), // Compacted
+          const SizedBox(height: 12),
           Text(
             label,
             style: theme.textTheme.bodyMedium?.copyWith(
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.lightTextPrimary,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Helper widget for each day in the weekly progress bar
+class _WeekDay extends StatelessWidget {
+  final String day;
+  final String status; // 'done', 'missed', 'pending', 'future'
+
+  const _WeekDay({required this.day, required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Color bgColor;
+    Widget icon;
+
+    switch (status) {
+      case 'done':
+        bgColor = AppColors.lightPrimary;
+        icon = const Icon(Icons.check, color: AppColors.white, size: 16);
+        break;
+      case 'missed':
+        bgColor = AppColors.lightError;
+        icon = const Icon(Icons.close, color: AppColors.white, size: 16);
+        break;
+      case 'pending':
+        bgColor = AppColors.lightWarning;
+        icon = const Icon(
+          Icons.nightlight_round,
+          color: AppColors.white,
+          size: 14,
+        );
+        break;
+      default: // 'future'
+        bgColor = AppColors.lightBorder.withOpacity(0.5);
+        icon = Container();
+        break;
+    }
+
+    return Column(
+      children: [
+        Text(
+          day,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: AppColors.lightTextSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+          child: Center(child: icon),
+        ),
+      ],
     );
   }
 }

@@ -75,6 +75,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
               Stack(
                 alignment: Alignment.center,
                 children: [
+                  // --- MODIFIED: Outer circle color ---
                   // New Outer, larger, more transparent circle (drawn first = "underneath")
                   Container(
                     width: 280, // Compacted from 300
@@ -82,23 +83,20 @@ class _BreathingScreenState extends State<BreathingScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.lightPrimary.withAlpha(
-                        10,
+                        15, // Was 10. Made slightly more opaque.
                       ), // More transparent
                     ),
                   ),
+                  // --- MODIFIED: Inner circle now uses a solid color instead of gradient ---
                   // Original Inner Circle
                   Container(
                     width: 240, // Compacted from 260
                     height: 240, // Compacted from 260
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          AppColors.lightPrimary.withAlpha(13),
-                          AppColors.lightBackground,
-                        ],
-                        stops: const [0.5, 1.0],
-                      ),
+                      // Replaced RadialGradient with a solid, semi-transparent color
+                      // to match the screenshot.
+                      color: AppColors.lightPrimary.withAlpha(30), // ~12% opacity
                     ),
                     child: Center(
                       child: Column(

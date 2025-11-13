@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:quit_habit/screens/navbar/common/common_header.dart';
+import 'package:quit_habit/screens/navbar/home/calendar/calendar_screen.dart';
 import 'package:quit_habit/screens/navbar/home/report_relapse/report_relapse_screen.dart';
 import 'package:quit_habit/screens/navbar/tools/tools_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
@@ -216,7 +217,13 @@ class HomeScreen extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          // TODO: Handle "Complete" day
+                          PersistentNavBarNavigator.pushNewScreen(
+                            context,
+                            screen: const CalendarScreen(),
+                            withNavBar: false,
+                            pageTransitionAnimation:
+                                PageTransitionAnimation.cupertino,
+                          );
                         },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(

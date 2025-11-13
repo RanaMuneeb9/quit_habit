@@ -172,6 +172,24 @@ class _ToolsScreenState extends State<ToolsScreen> {
             );
           },
         ),
+        // --- NEW CARD ADDED ---
+        // _ToolCard(
+        //   width: cardWidth,
+        //   icon: Icons.apps_outlined, // Icon from design
+        //   title: 'Word Puzzle',
+        //   subtitle: 'Distract mind',
+        //   iconColor: _kPuzzleColor,
+        //   backgroundColor: _kPuzzleBg,
+        //   onTap: () {
+        //     // TODO: Navigate to Word Puzzle screen
+        //     // PersistentNavBarNavigator.pushNewScreen(
+        //     //   context,
+        //     //   screen: const WordPuzzleScreen(), // Create this screen
+        //     //   withNavBar: false,
+        //     //   pageTransitionAnimation: PageTransitionAnimation.sizeUp,
+        //     // );
+        //   },
+        // ),
         _ToolCard(
           width: cardWidth,
           icon: Icons.star_outline_rounded,
@@ -218,51 +236,59 @@ class _ToolCard extends StatelessWidget {
     final theme = Theme.of(context);
     return SizedBox(
       width: width,
-      child: AspectRatio(
-        aspectRatio: 1.0, // Makes the card square
-        child: Container(
-          decoration: BoxDecoration(
-            color: backgroundColor,
+      // REMOVED AspectRatio to make cards rectangular
+      // child: AspectRatio(
+      //   aspectRatio: 1.0, // Makes the card square
+      child: Container(
+        height: 130, // Set a fixed height
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: iconColor.withOpacity(0.3), width: 1.5),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: iconColor.withOpacity(0.3), width: 1.5),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Icon(icon, color: iconColor, size: 28),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            color: AppColors.lightTextPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0), // REDUCED padding
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center, // CHANGED
+                mainAxisAlignment: MainAxisAlignment.center, // CHANGED
+                children: [
+                  Icon(icon, color: iconColor, size: 28),
+                  const SizedBox(height: 12), // ADDED spacer
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center, // CHANGED
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: AppColors.lightTextPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15, // Tweaked font size
                         ),
-                        Text(
-                          subtitle,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.lightTextSecondary,
-                          ),
+                        textAlign: TextAlign.center, // ADDED
+                      ),
+                      const SizedBox(height: 2), // ADDED spacer
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.lightTextSecondary,
+                          fontSize: 13, // Tweaked font size
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                        textAlign: TextAlign.center, // ADDED
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
         ),
       ),
+      // ), // REMOVED AspectRatio closing
     );
   }
 }

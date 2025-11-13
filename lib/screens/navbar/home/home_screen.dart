@@ -154,8 +154,8 @@ class HomeScreen extends StatelessWidget {
         children: [
           // This Positioned widget is the overlay, drawn first (underneath)
           Positioned(
-            top: -20,
-            right: -20,
+            top: -40,
+            right: -40,
             child: Container(
               width: 120,
               height: 120,
@@ -183,12 +183,12 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(1),
                       color: Colors.transparent,
                       child: const Icon(
                         Icons.military_tech_outlined,
                         color: AppColors.lightWarning,
-                        size: 24,
+                        size: 31,
                       ),
                     ),
                   ],

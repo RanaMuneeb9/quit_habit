@@ -14,7 +14,8 @@ class CommonHeader extends StatelessWidget {
       children: [
         _buildStatBadge(
           theme,
-          icon: Icons.health_and_safety_outlined,
+          // icon: Icons.health_and_safety_outlined,
+          image: "images/icons/header_shield.png",
           label: '0%',
           bgColor: AppColors.badgeGreen,
           iconColor: AppColors.lightSuccess,
@@ -23,7 +24,8 @@ class CommonHeader extends StatelessWidget {
         const SizedBox(width: 8),
         _buildStatBadge(
           theme,
-          icon: Icons.diamond_outlined,
+          // icon: Icons.diamond_outlined,
+          image: "images/icons/header_diamond.png",
           label: '1',
           bgColor: AppColors.badgeBlue,
           iconColor: AppColors.lightPrimary,
@@ -32,7 +34,8 @@ class CommonHeader extends StatelessWidget {
         const SizedBox(width: 8),
         _buildStatBadge(
           theme,
-          icon: Icons.monetization_on_outlined,
+          // icon: Icons.monetization_on_outlined,
+          image: "images/icons/header_coin.png",
           label: '0',
           bgColor: AppColors.badgeOrange,
           iconColor: AppColors.lightWarning,
@@ -48,10 +51,15 @@ class CommonHeader extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(
-                FontAwesome.crown_solid,
-                color: AppColors.white,
-                size: 16,
+              // const Icon(
+              //   FontAwesome.crown_solid,
+              //   color: AppColors.white,
+              //   size: 16,
+              // ),
+              Image.asset(
+                "images/icons/pro_crown.png",
+                width: 18,
+                height: 18,
               ),
               const SizedBox(width: 10),
               Text(
@@ -72,7 +80,8 @@ class CommonHeader extends StatelessWidget {
   // This is the _buildStatBadge implementation from home_screen.dart
   Widget _buildStatBadge(
     ThemeData theme, {
-    required IconData icon,
+    // required IconData icon,
+    required String image,
     required String label,
     required Color bgColor,
     required Color textColor,
@@ -86,7 +95,8 @@ class CommonHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: iconColor, size: 16),
+          // Icon(icon, color: iconColor, size: 16),
+          Image.asset(image, width: 18, height: 18,),
           const SizedBox(width: 4),
           Text(
             label,

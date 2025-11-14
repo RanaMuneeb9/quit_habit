@@ -186,11 +186,16 @@ class HomeScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(1),
                       color: Colors.transparent,
-                      child: const Icon(
-                        Icons.military_tech_outlined,
-                        color: AppColors.lightWarning,
-                        size: 31,
+                      child: Image.asset(
+                        "images/icons/home_trophy.png",
+                        width: 31,
+                        height: 31,
                       ),
+                      // child: const Icon(
+                      //   Icons.military_tech_outlined,
+                      //   color: AppColors.lightWarning,
+                      //   size: 31,
+                      // ),
                     ),
                   ],
                 ),
@@ -321,7 +326,8 @@ class HomeScreen extends StatelessWidget {
           children: [
             Expanded(
               child: _DistractionCard(
-                icon: Icons.air,
+                // icon: Icons.air,
+                image: "images/icons/home_breathing.png",
                 label: 'Breathing',
                 bgColor: AppColors.lightRed.withOpacity(0.1),
                 iconBgColor: AppColors.lightRed,
@@ -330,7 +336,8 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _DistractionCard(
-                icon: Icons.fitness_center_outlined,
+                // icon: Icons.fitness_center_outlined,
+                image: "images/icons/home_exercise.png",
                 label: 'Exercise',
                 bgColor: AppColors.lightBlueDistraction, // Corrected Color
                 iconBgColor: AppColors.lightPrimary,
@@ -339,7 +346,8 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _DistractionCard(
-                icon: Icons.self_improvement,
+                // icon: Icons.self_improvement,
+                image: "images/icons/home_meditate.png",
                 label: 'Meditate',
                 bgColor: AppColors.lightGreenBackground, // Corrected Color
                 iconBgColor: AppColors.lightSuccess,
@@ -430,10 +438,10 @@ class HomeScreen extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Icon(
-                              Icons.electric_bolt_outlined, // Corrected Icon
-                              color: AppColors.lightPrimary,
-                              size: 24,
+                            Image.asset(
+                              "images/icons/home_electro.png",
+                              width: 32,
+                              height: 32,
                             ),
                             const SizedBox(height: 8),
                             Text(
@@ -544,9 +552,10 @@ class HomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.local_florist_outlined,
-                    color: AppColors.lightSuccess,
+                  Image.asset(
+                    "images/icons/home_grass.png",
+                    width: 28,
+                    height: 28,
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -618,11 +627,17 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.workspace_premium_outlined,
-            color: AppColors.lightWarning,
-            size: 32,
-          ),
+          // Icon(
+          //   Icons.workspace_premium_outlined,
+          //   color: AppColors.lightWarning,
+          //   size: 32,
+          // ),
+          Image.asset(
+                "images/icons/pro_crown.png",
+                width: 32,
+                height: 32,
+                color: AppColors.proColor
+              ),
           const SizedBox(height: 12),
           Text(
             'Unlock Premium',
@@ -646,7 +661,7 @@ class HomeScreen extends StatelessWidget {
               // TODO: Navigate to subscription screen
             },
             style: theme.elevatedButtonTheme.style?.copyWith(
-              backgroundColor: WidgetStateProperty.all(AppColors.lightWarning),
+              backgroundColor: WidgetStateProperty.all(AppColors.proColor),
               foregroundColor: WidgetStateProperty.all(AppColors.white),
               minimumSize: WidgetStateProperty.all(
                 const Size(double.infinity, 50),
@@ -662,13 +677,15 @@ class HomeScreen extends StatelessWidget {
 
 /// Helper widget for the Distraction Cards
 class _DistractionCard extends StatelessWidget {
-  final IconData icon;
+  // final IconData icon;
+  final String image;
   final String label;
   final Color bgColor;
   final Color iconBgColor;
 
   const _DistractionCard({
-    required this.icon,
+    // required this.icon,
+    required this.image,
     required this.label,
     required this.bgColor,
     required this.iconBgColor,
@@ -688,13 +705,14 @@ class _DistractionCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               color: iconBgColor,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppColors.white, size: 24),
+            // child: Icon(icon, color: AppColors.white, size: 24),
+            child: Image.asset(image),
           ),
           const SizedBox(height: 12),
           Text(
@@ -735,11 +753,7 @@ class _WeekDay extends StatelessWidget {
         break;
       case 'pending':
         bgColor = AppColors.lightWarning;
-        icon = const Icon(
-          Icons.pending,
-          color: AppColors.white,
-          size: 14,
-        );
+        icon = const Icon(Icons.pending, color: AppColors.white, size: 14);
         break;
       default: // 'future'
         bgColor = AppColors.lightBorder.withOpacity(0.5);

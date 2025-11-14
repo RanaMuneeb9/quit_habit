@@ -154,12 +154,12 @@ class _Questionnaire3ScreenState extends State<Questionnaire3Screen> {
                             ),
                           ],
                         ),
-                        child: const Center(
+                        child: Center(
                           // Changed Icon
-                          child: Icon(
-                            Icons.monetization_on_outlined,
-                            size: 40,
-                            color: AppColors.lightPrimary,
+                          child: Image.asset(
+                            'images/icons/cig_3.png',
+                            width: 60,
+                            height: 60,
                           ),
                         ),
                       ),

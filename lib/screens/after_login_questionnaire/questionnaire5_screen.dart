@@ -131,10 +131,10 @@ class _Questionnaire5ScreenState extends State<Questionnaire5Screen> {
                         ],
                       ),
                       child: Center(
-                        child: Icon(
-                          Icons.access_time_filled_rounded,
-                          size: 40,
-                          color: AppColors.lightTextPrimary,
+                        child: Image.asset(
+                          'images/icons/cig_5.png',
+                          width: 50,
+                          height: 50,
                         ),
                       ),
                     ),

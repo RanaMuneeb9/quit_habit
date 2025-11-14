@@ -130,8 +130,13 @@ class _Questionnaire1ScreenState extends State<Questionnaire1Screen> {
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: Text('🚬', style: const TextStyle(fontSize: 40)),
+                      child: Padding(
+                        padding: .only(bottom: 18),
+                        child: Image.asset(
+                          'images/icons/cig_1.png',
+                          width: 60,
+                          height: 60,
+                        ),
                       ),
                     ),
                   ),

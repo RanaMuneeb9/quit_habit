@@ -154,12 +154,11 @@ class _Questionnaire2ScreenState extends State<Questionnaire2Screen> {
                             ),
                           ],
                         ),
-                        child: const Center(
-                          // Changed Icon (using smoking_rooms as placeholder)
-                          child: Icon(
-                            Icons.smoking_rooms,
-                            size: 40,
-                            color: AppColors.lightPrimary,
+                        child: Center(
+                          child: Image.asset(
+                            'images/icons/cig_2.png',
+                            width: 60,
+                            height: 60,
                           ),
                         ),
                       ),

@@ -131,10 +131,10 @@ class _Questionnaire4ScreenState extends State<Questionnaire4Screen> {
                         ],
                       ),
                       child: Center(
-                        child: Icon(
-                          Icons.health_and_safety_outlined,
-                          size: 40,
-                          color: AppColors.lightError, // Red shield color
+                        child: Image.asset(
+                          'images/icons/cig_4.png',
+                          width: 60,
+                          height: 60,
                         ),
                       ),
                     ),

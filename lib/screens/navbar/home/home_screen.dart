@@ -504,85 +504,58 @@ class HomeScreen extends StatelessWidget {
 
   /// Builds the "Today's Plan" section
   Widget _buildTodaysPlan(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "Today's Plan",
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.lightTextPrimary,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        color: AppColors.white, // White background
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.lightBorder, width: 1.5), // Light border
+      ),
+      child: Column(
+        children: [
+          // 1. Icon
+          Image.asset(
+            "images/icons/home_grass.png",
+            width: 28,
+            height: 28,
+          ),
+          const SizedBox(height: 16),
+          // 2. Day Status
+          RichText(
+            text: TextSpan(
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                // TODO: Navigate to Plan screen
-              },
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'View All →',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.lightPrimary,
+              children: [
+                TextSpan(
+                  text: 'Day 3 ', // Hardcoded from design
+                  style: const TextStyle(color: AppColors.lightTextPrimary),
                 ),
-              ),
+                TextSpan(
+                  text: '• Active', // Hardcoded from design
+                  style: const TextStyle(color: AppColors.lightSuccess),
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.lightBorder, width: 1.5),
           ),
-          child: Column(
-            children: [
-              // --- CORRECTED: Centered Row ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    "images/icons/home_grass.png",
-                    width: 28,
-                    height: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Day 3 • Active',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: AppColors.lightTextPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 32, color: AppColors.lightBorder),
-              _buildPlanItem(
-                theme,
-                text: 'Make commitment to quit smoking day by day.',
-                isDone: true,
-              ),
-              const SizedBox(height: 16),
-              _buildPlanItem(
-                theme,
-                text: 'Establish immediate health benefits with quit habit',
-                isDone: true,
-              ),
-            ],
+          const SizedBox(height: 24),
+          // 3. Tasks
+          // Using the _buildPlanItem helper already defined below
+          _buildPlanItem(
+            theme,
+            text: 'Make commitment to quit smoking day by day.', // From design
+            isDone: true, // From design
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          _buildPlanItem(
+            theme,
+            text: 'Establish immediate health benefits with quit habit', // From design
+            isDone: false, // From design
+          ),
+        ],
+      ),
     );
   }
 

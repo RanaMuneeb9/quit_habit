@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:quit_habit/screens/after_login_questionnaire/questionnaire1_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/screens/auth/login/forgot_password/forgot_password_screen.dart';
 import 'package:quit_habit/screens/auth/register/register_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
@@ -22,26 +23,65 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
+      final formData = _formKey.currentState?.value;
+      if (formData == null) return;
+      
+      final email = formData['email'] as String;
+      final password = formData['password'] as String;
+
       setState(() {
         _isLoading = true;
       });
 
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.signInWithEmailAndPassword(email, password);
+        // Navigation is handled by AuthGate
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceFirst('Exception: ', '')),
+              backgroundColor: AppColors.lightError,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.signInWithGoogle();
+      // Navigation is handled by AuthGate
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppColors.lightError,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-
-        // Navigate to questionnaire screen after successful login
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const Questionnaire1Screen()),
-        );
       }
-
-      // TODO: Implement actual login logic
-      // final formData = _formKey.currentState?.value;
-      // final email = formData['email'];
-      // final password = formData['password'];
     }
   }
 
@@ -109,30 +149,27 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 1.5,
                       ),
                     ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        // Handle Google Sign In
-                        // TODO: Implement Google Sign In logic
-                        // For now, simulate successful sign in and navigate
-                        if (mounted) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const Questionnaire1Screen(),
-                            ),
-                          );
-                        }
-                      },
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _isLoading ? null : _handleGoogleSignIn,
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Brand(Brands.google, size: 20),
-                              const SizedBox(width: 12),
+                              if (_isLoading)
+                                const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              else
+                                Brand(Brands.google, size: 20),
+                              if (!_isLoading) const SizedBox(width: 12),
                               Text(
                                 'Continue with Google',
                                 style: theme.textTheme.labelLarge?.copyWith(

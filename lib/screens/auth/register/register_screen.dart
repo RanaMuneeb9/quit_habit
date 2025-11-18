@@ -3,6 +3,8 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:provider/provider.dart';
+import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -16,6 +18,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
+
+  Future<void> _handleRegister() async {
+    if (_formKey.currentState?.saveAndValidate() ?? false) {
+      final formData = _formKey.currentState?.value;
+      if (formData == null) return;
+      
+      final fullName = formData['full_name'] as String;
+      final email = formData['email'] as String;
+      final password = formData['password'] as String;
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.signUpWithEmailAndPassword(
+          email,
+          password,
+          fullName,
+        );
+        // Navigation is handled by AuthGate
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceFirst('Exception: ', '')),
+              backgroundColor: AppColors.lightError,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignUp() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.signInWithGoogle();
+      // Navigation is handled by AuthGate
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppColors.lightError,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,17 +156,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () {
-                        // Handle Google Sign Up
-                      },
+                      onTap: _isLoading ? null : _handleGoogleSignUp,
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Brand(Brands.google, size: 20),
-                            const SizedBox(width: 12),
+                            if (_isLoading)
+                              const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            else
+                              Brand(Brands.google, size: 20),
+                            if (!_isLoading) const SizedBox(width: 12),
                             Text(
                               'Sign up with Google',
                               style: theme.textTheme.labelLarge?.copyWith(
@@ -552,14 +631,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState?.saveAndValidate() ??
-                                false) {
-                              // Handle registration
-                              // TODO: Implement registration logic
-                              // final formData = _formKey.currentState?.value;
-                            }
-                          },
+                          onPressed: _isLoading ? null : _handleRegister,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.lightPrimary,
                             foregroundColor: AppColors.white,
@@ -567,14 +639,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            disabledBackgroundColor: AppColors.lightPrimary
+                                .withValues(alpha: 0.5),
                           ),
-                          child: Text(
-                            'Get Started',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  'Get Started',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/screens/navbar/navbar.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:quit_habit/utils/navigation_utils.dart';
@@ -173,20 +175,48 @@ class _Questionnaire5ScreenState extends State<Questionnaire5Screen> {
                     final isSelected = _selectedOption == option;
 
                     return GestureDetector(
-                      onTap: () {
+                      onTap: () async {
                         setState(() {
                           _selectedOption = option;
                         });
 
-                        // Navigator.pushReplacement(
-                        //   context,
-                        //   createRightToLeftRoute(const HomeScreen()),
-                        // );
+                        try {
+                          final authProvider =
+                              Provider.of<AuthProvider>(context, listen: false);
+                          final user = authProvider.user;
 
-                        Navigator.pushReplacement(
-                          context,
-                          createRightToLeftRoute(const NavBar()),
-                        );
+                          if (user != null) {
+                            // Mark questionnaire as completed
+                            await authProvider.userService
+                                .markQuestionnaireCompleted(user.uid);
+                            // Refresh questionnaire status
+                            await authProvider.refreshQuestionnaireStatus();
+                          }
+
+                          if (mounted) {
+                            Navigator.pushReplacement(
+                              context,
+                              createRightToLeftRoute(const NavBar()),
+                            );
+                          }
+                        } catch (e) {
+                          // If marking as completed fails, still navigate
+                          // The AuthGate will handle the routing
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Error saving progress: ${e.toString()}'),
+                                backgroundColor: AppColors.lightError,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            Navigator.pushReplacement(
+                              context,
+                              createRightToLeftRoute(const NavBar()),
+                            );
+                          }
+                        }
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),

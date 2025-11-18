@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:provider/provider.dart';
+import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/screens/navbar/profile/faq/faq_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/my_data/my_data_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/notifications/notifications_screen.dart';
@@ -840,7 +842,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () => _handleSignOut(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFEE2E2), // Light Red background
           foregroundColor: AppColors.lightError,
@@ -868,5 +870,95 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  /// Handles sign out with confirmation dialog
+  Future<void> _handleSignOut(BuildContext context) async {
+    // Show confirmation dialog
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Sign Out',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        content: Text(
+          'Are you sure you want to sign out?',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: AppColors.lightBorder,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.lightTextSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.lightError,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Sign Out',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut == true && mounted) {
+      try {
+        final authProvider =
+            Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.signOut();
+        // Navigation is handled by AuthGate
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Failed to sign out: ${e.toString().replaceFirst('Exception: ', '')}'),
+              backgroundColor: AppColors.lightError,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
   }
 }

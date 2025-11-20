@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quit_habit/providers/auth_provider.dart';
-import 'package:quit_habit/screens/navbar/navbar.dart';
 import 'package:quit_habit/utils/app_colors.dart';
-import 'package:quit_habit/utils/navigation_utils.dart';
 
 class Questionnaire5Screen extends StatefulWidget {
   const Questionnaire5Screen({super.key});
@@ -184,20 +182,17 @@ class _Questionnaire5ScreenState extends State<Questionnaire5Screen> {
                           final authProvider =
                               Provider.of<AuthProvider>(context, listen: false);
                           
-                          // Mark questionnaire as completed
-                          // For email/password users: saves to Firestore
-                          // For Google users: only updates local state (not persisted)
+                          // Mark questionnaire as completed (saves to Firestore for all users)
                           await authProvider.markQuestionnaireCompleted();
 
+                          // Pop back to AuthGate root - AuthGate will automatically detect
+                          // hasCompletedQuestionnaire flag change and route to NavBar
                           if (mounted) {
-                            Navigator.pushReplacement(
-                              context,
-                              createRightToLeftRoute(const NavBar()),
-                            );
+                            Navigator.of(context).popUntil((route) => route.isFirst);
                           }
                         } catch (e) {
-                          // If marking as completed fails, still navigate
-                          // The AuthGate will handle the routing
+                          // If marking as completed fails, still pop back to root
+                          // AuthGate will handle the routing based on current state
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -207,10 +202,7 @@ class _Questionnaire5ScreenState extends State<Questionnaire5Screen> {
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
-                            Navigator.pushReplacement(
-                              context,
-                              createRightToLeftRoute(const NavBar()),
-                            );
+                            Navigator.of(context).popUntil((route) => route.isFirst);
                           }
                         }
                       },

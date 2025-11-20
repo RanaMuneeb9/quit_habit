@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:provider/provider.dart';
+import 'package:quit_habit/providers/auth_provider.dart';
+import 'package:quit_habit/services/auth_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -18,17 +21,45 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _handleResetPassword() async {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
+      final formData = _formKey.currentState?.value;
+      if (formData == null) return;
+
+      final email = formData['email'] as String;
+
       setState(() {
         _isLoading = true;
       });
 
-      setState(() {
-        _isLoading = false;
-        _emailSent = true;
-      });
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.resetPassword(email);
 
-      // TODO: Implement actual password reset logic
-      // final email = _formKey.currentState?.value['email'];
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _emailSent = true;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          String errorMessage = e.toString().replaceFirst('Exception: ', '');
+          if (e is AuthException) {
+            errorMessage = e.message;
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: AppColors.lightError,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     }
   }
 

@@ -6,7 +6,6 @@ import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/utils/app_colors.dart';
-import 'package:quit_habit/widgets/auth_gate.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -42,13 +41,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           password,
           fullName,
         );
-        
-        // Clear navigation stack and return to root (AuthGate will handle routing)
+        // Pop back to AuthGate root so it can rebuild and route to the correct screen
         if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const AuthGate()),
-            (route) => false,
-          );
+          Navigator.of(context).popUntil((route) => route.isFirst);
         }
       } catch (e) {
         if (mounted) {
@@ -78,13 +73,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signInWithGoogle();
-      
-      // Clear navigation stack and return to root (AuthGate will handle routing)
+      // Pop back to AuthGate root so it can rebuild and route to the correct screen
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const AuthGate()),
-          (route) => false,
-        );
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
       if (mounted) {

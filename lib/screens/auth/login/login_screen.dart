@@ -7,7 +7,6 @@ import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/screens/auth/login/forgot_password/forgot_password_screen.dart';
 import 'package:quit_habit/screens/auth/register/register_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
-import 'package:quit_habit/widgets/auth_gate.dart';
 import 'package:icons_plus/icons_plus.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,14 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         await authProvider.signInWithEmailAndPassword(email, password);
-        
-        // Clear navigation stack and return to root (AuthGate will handle routing)
-        if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const AuthGate()),
-            (route) => false,
-          );
-        }
+        // AuthGate will automatically detect auth state change and route to the correct screen
       } catch (e) {
         if (mounted) {
           String errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -96,14 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signInWithGoogle();
-      
-      // Clear navigation stack and return to root (AuthGate will handle routing)
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const AuthGate()),
-          (route) => false,
-        );
-      }
+      // AuthGate will automatically detect auth state change and route to the correct screen
     } catch (e) {
       if (mounted) {
         // Dismiss any existing SnackBar before showing a new one to avoid Hero tag conflicts

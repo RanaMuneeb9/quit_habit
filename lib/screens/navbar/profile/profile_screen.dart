@@ -24,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final UserService _userService = UserService();
   Map<String, dynamic>? _userData;
   bool _isLoadingUserData = false;
+  bool _isSigningOut = false;
 
   @override
   void initState() {
@@ -928,32 +929,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: () => _handleSignOut(context),
+        onPressed: _isSigningOut ? null : () => _handleSignOut(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFEE2E2), // Light Red background
           foregroundColor: AppColors.lightError,
           elevation: 0,
+          disabledBackgroundColor: const Color(0xFFFEE2E2).withOpacity(0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: const BorderSide(
                 color: Color(0xFFFECACA)), // Slightly darker red border
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.logout_rounded, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Sign Out',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: AppColors.lightError,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
+        child: _isSigningOut
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.lightError,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Signing Out...',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: AppColors.lightError,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.logout_rounded, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Sign Out',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: AppColors.lightError,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1028,6 +1055,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (shouldSignOut == true && mounted) {
+      setState(() {
+        _isSigningOut = true;
+      });
+
       try {
         final authProvider =
             Provider.of<AuthProvider>(context, listen: false);
@@ -1043,6 +1074,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       } catch (e) {
         if (mounted) {
+          setState(() {
+            _isSigningOut = false;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(

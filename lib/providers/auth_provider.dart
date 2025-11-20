@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:quit_habit/services/auth_service.dart';
 import 'package:quit_habit/services/user_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -27,7 +26,7 @@ class AuthProvider extends ChangeNotifier {
     _authService.authStateChanges.listen((User? user) async {
       _user = user;
       if (user != null) {
-        // Check questionnaire status (Firestore for email/password, SharedPreferences for Google)
+        // Check questionnaire status from Firestore
         await _checkQuestionnaireStatus(user);
       } else {
         _hasCompletedQuestionnaire = false;
@@ -37,28 +36,8 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
-  /// Check if user signed in with Google
-  bool _isGoogleSignInUser(User user) {
-    return user.providerData.any((info) => info.providerId == 'google.com');
-  }
-
   Future<void> _checkQuestionnaireStatus(User user) async {
-    // Google sign-in users don't have Firestore documents
-    if (_isGoogleSignInUser(user)) {
-      // Check SharedPreferences for Google users
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final key = _getQuestionnaireKey(user.uid);
-        _hasCompletedQuestionnaire = prefs.getBool(key) ?? false;
-      } catch (e) {
-        // If check fails, assume not completed
-        _hasCompletedQuestionnaire = false;
-      }
-      notifyListeners();
-      return;
-    }
-
-    // Only check Firestore for email/password users
+    // Always check Firestore for all users
     try {
       _hasCompletedQuestionnaire =
           await _userService.hasCompletedQuestionnaire(user.uid);
@@ -68,11 +47,6 @@ class AuthProvider extends ChangeNotifier {
       _hasCompletedQuestionnaire = false;
       notifyListeners();
     }
-  }
-
-  /// Get SharedPreferences key for questionnaire status
-  String _getQuestionnaireKey(String uid) {
-    return 'questionnaire_completed_$uid';
   }
 
   /// Sign in with Google
@@ -85,7 +59,20 @@ class AuthProvider extends ChangeNotifier {
       final user = userCredential.user;
 
       if (user != null) {
-        // Check questionnaire status (will load from SharedPreferences for Google users)
+        // Ensure Firestore document exists for Google users
+        try {
+          final userDoc = await _userService.getUserDocument(user.uid);
+          if (userDoc == null) {
+            // Document doesn't exist, create it
+            await _userService.createUserDocument(user);
+          }
+        } catch (e) {
+          // If Firestore operations fail, log but don't block sign-in
+          // Graceful degradation: user can still sign in, document will be created later if needed
+          debugPrint('Failed to check/create user document: $e');
+        }
+        
+        // Check questionnaire status
         await _checkQuestionnaireStatus(user);
       }
 
@@ -176,30 +163,49 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Mark questionnaire as completed (for Google users, persists to SharedPreferences)
+  /// Mark questionnaire as completed (saves to Firestore for all users)
   Future<void> markQuestionnaireCompleted() async {
     if (_user == null) return;
 
-    final isGoogleUser = _isGoogleSignInUser(_user!);
-    
-    if (isGoogleUser) {
-      // For Google users, save to SharedPreferences
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final key = _getQuestionnaireKey(_user!.uid);
-        await prefs.setBool(key, true);
-        _hasCompletedQuestionnaire = true;
-        notifyListeners();
-      } catch (e) {
-        // If saving fails, still update local state
-        _hasCompletedQuestionnaire = true;
-        notifyListeners();
+    try {
+      // Ensure document exists first (for Google users who might not have one yet)
+      final userDoc = await _userService.getUserDocument(_user!.uid);
+      if (userDoc == null) {
+        // Document doesn't exist, create it first
+        await _userService.createUserDocument(_user!);
       }
-    } else {
-      // For email/password users, save to Firestore
+      
+      // Mark questionnaire as completed in Firestore
       await _userService.markQuestionnaireCompleted(_user!.uid);
       _hasCompletedQuestionnaire = true;
       notifyListeners();
+    } catch (e) {
+      // If saving fails, still update local state for better UX
+      // User will see completion state even if sync fails temporarily
+      _hasCompletedQuestionnaire = true;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Reset password by sending reset email
+  /// Note: Provider checking is no longer possible client-side due to Firebase Auth deprecation
+  /// of fetchSignInMethodsForEmail. The email will be sent and Firebase handles validation server-side.
+  Future<void> resetPassword(String email) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Send password reset email
+      // Firebase will handle validation server-side and only send email if appropriate
+      await _authService.sendPasswordResetEmail(email);
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
     }
   }
 }

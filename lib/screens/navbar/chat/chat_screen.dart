@@ -57,6 +57,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// Handles sending a message
   void _sendMessage() {
+    // Prevent sending multiple messages while AI is generating
+    if (_isGenerating) return;
+    
     if (_isTyping) {
       final text = _controller.text;
 
@@ -441,9 +444,9 @@ class _ChatScreenState extends State<ChatScreen> {
           suffixIcon: IconButton(
             icon: Icon(
               Icons.send_rounded,
-              color: _isTyping ? AppColors.lightPrimary : AppColors.lightBorder,
+              color: (_isTyping && !_isGenerating) ? AppColors.lightPrimary : AppColors.lightBorder,
             ),
-            onPressed: _sendMessage,
+            onPressed: (_isGenerating || !_isTyping) ? null : _sendMessage,
           ),
         ),
       ),

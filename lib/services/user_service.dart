@@ -25,6 +25,7 @@ class UserService {
           'email': user.email,
           'displayName': fullName ?? user.displayName ?? '',
           'hasCompletedQuestionnaire': false,
+          'coins': 0,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });

@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:quit_habit/models/habit_data.dart';
+import 'package:quit_habit/providers/auth_provider.dart';
+import 'package:quit_habit/services/habit_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 // Enum to manage the day's status
-enum DayStatus { clean, relapse, none }
+enum DayStatus { clean, relapse, none, notStarted }
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  final bool? isStartDateSelection;
+  final DateTime? initialDate;
+  final bool allowAddRelapse;
+
+  const CalendarScreen({
+    super.key,
+    this.isStartDateSelection,
+    this.initialDate,
+    this.allowAddRelapse = false,
+  });
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -15,124 +28,410 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   // --- State Variables ---
+  final HabitService _habitService = HabitService();
+  bool _isLoading = false;
+  String? _errorMessage;
 
   // Controls the visible month
-  DateTime _focusedDay = DateTime(2022, 9, 13);
+  late DateTime _focusedDay;
   // Controls the tapped/selected day
-  DateTime _selectedDay = DateTime(2022, 9, 13);
+  late DateTime _selectedDay;
 
-  // Hardcoded data to match the provided image
-  final Set<DateTime> _relapseDays = {
-    DateUtils.dateOnly(DateTime(2022, 9, 13)),
-  };
+  // Check if this is start date selection mode
+  bool get _isStartDateSelection =>
+      widget.isStartDateSelection ?? false;
+  
+  // Check if Add Relapse button should be shown
+  bool get _shouldShowAddRelapse => widget.allowAddRelapse;
 
-  final Set<DateTime> _cleanDays = {
-    DateUtils.dateOnly(DateTime(2022, 9, 14)),
-    DateUtils.dateOnly(DateTime(2022, 9, 15)),
-    DateUtils.dateOnly(DateTime(2022, 9, 16)),
-    DateUtils.dateOnly(DateTime(2022, 9, 17)),
-    DateUtils.dateOnly(DateTime(2022, 9, 18)),
-    DateUtils.dateOnly(DateTime(2022, 9, 19)),
-    DateUtils.dateOnly(DateTime(2022, 9, 20)),
-    DateUtils.dateOnly(DateTime(2022, 9, 21)),
-  };
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _focusedDay = widget.initialDate ?? now;
+    _selectedDay = widget.initialDate ?? now;
+  }
 
-  /// Checks the status of a given day
-  DayStatus _getDayStatus(DateTime day) {
-    if (_relapseDays.contains(DateUtils.dateOnly(day))) {
-      return DayStatus.relapse;
+  /// Checks the status of a given day from habit data
+  DayStatus _getDayStatus(HabitData? habitData, List<RelapsePeriod> relapsePeriods, DateTime day) {
+    if (habitData == null) {
+      return DayStatus.notStarted;
     }
-    if (_cleanDays.contains(DateUtils.dateOnly(day))) {
-      return DayStatus.clean;
+
+    final status = _habitService.getDayStatus(habitData, relapsePeriods, day);
+    switch (status) {
+      case 'not_started':
+        return DayStatus.notStarted;
+      case 'relapse':
+        return DayStatus.relapse;
+      case 'clean':
+        return DayStatus.clean;
+      default:
+        return DayStatus.none;
     }
-    return DayStatus.none;
+  }
+
+  /// Check if a date can be edited (current or past dates only, not future)
+  bool _canEditDate(DateTime date) {
+    final today = DateTime.now();
+    final todayNormalized = DateTime(today.year, today.month, today.day);
+    final dateNormalized = DateTime(date.year, date.month, date.day);
+    return !dateNormalized.isAfter(todayNormalized);
+  }
+
+  /// Check if today is relapsed
+  bool _isTodayRelapsed(HabitData? habitData, List<RelapsePeriod> relapsePeriods) {
+    if (habitData == null) return false;
+    final today = DateTime.now();
+    return _habitService.getDayStatus(habitData, relapsePeriods, today) == 'relapse';
+  }
+
+  /// Handle start date selection
+  Future<void> _handleStartDateSelection() async {
+    if (!_canEditDate(_selectedDay)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Start date cannot be in the future'),
+          backgroundColor: AppColors.lightError,
+        ),
+      );
+      return;
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    if (user == null) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _habitService.setStartDate(user.uid, _selectedDay);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Start date set successfully'),
+            backgroundColor: AppColors.lightSuccess,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } on HabitServiceException catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.lightError,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to set start date: ${e.toString()}';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to set start date: ${e.toString()}'),
+            backgroundColor: AppColors.lightError,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   /// Adds or removes a relapse for the selected day
-  void _toggleRelapse() {
+  Future<void> _toggleRelapse(HabitData? habitData, List<RelapsePeriod> relapsePeriods) async {
+    if (habitData == null) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    if (user == null) return;
+
+    // Check if date can be edited
+    if (!_canEditDate(_selectedDay)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot edit future dates'),
+          backgroundColor: AppColors.lightError,
+        ),
+      );
+      return;
+    }
+
+    // Check if today is relapsed and trying to edit today
+    final today = DateTime.now();
+    final todayNormalized = DateTime(today.year, today.month, today.day);
+    final selectedNormalized = DateTime(
+      _selectedDay.year,
+      _selectedDay.month,
+      _selectedDay.day,
+    );
+    final isToday = selectedNormalized == todayNormalized;
+    final todayRelapsed = _isTodayRelapsed(habitData, relapsePeriods);
+
+    if (isToday && todayRelapsed) {
+      // Can't remove today's relapse from calendar (must use report relapse screen)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot modify today\'s relapse from calendar'),
+          backgroundColor: AppColors.lightError,
+        ),
+      );
+      return;
+    }
+
     setState(() {
-      final day = DateUtils.dateOnly(_selectedDay);
-      if (_relapseDays.contains(day)) {
-        _relapseDays.remove(day);
-      } else {
-        _relapseDays.add(day);
-        _cleanDays.remove(day); // A day can't be both
-      }
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final currentStatus = _getDayStatus(habitData, relapsePeriods, _selectedDay);
+      if (currentStatus == DayStatus.relapse) {
+        // Remove relapse
+        await _habitService.removeRelapse(user.uid, _selectedDay);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Relapse removed'),
+              backgroundColor: AppColors.lightSuccess,
+            ),
+          );
+        }
+      } else {
+        // Need trigger to add relapse - navigate to report relapse screen
+        // But first check if we can add it
+        if (habitData.startDate == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please set start date first'),
+              backgroundColor: AppColors.lightError,
+            ),
+          );
+          return;
+        }
+
+        // Navigate to report relapse screen with pre-selected date
+        if (mounted) {
+          Navigator.pop(context);
+          // The parent screen should handle navigation to report relapse
+          // For now, show a message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please use Report Relapse to add a relapse'),
+              backgroundColor: AppColors.lightWarning,
+            ),
+          );
+        }
+      }
+    } on HabitServiceException catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.lightError,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to update relapse: ${e.toString()}';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update relapse: ${e.toString()}'),
+            backgroundColor: AppColors.lightError,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final DayStatus selectedDayStatus = _getDayStatus(_selectedDay);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
 
-    return Scaffold(
-      backgroundColor: AppColors.lightBackground,
-      appBar: AppBar(
+    if (user == null) {
+      return Scaffold(
         backgroundColor: AppColors.lightBackground,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: AppColors.lightTextPrimary,
+        appBar: AppBar(
+          backgroundColor: AppColors.lightBackground,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back,
+              color: AppColors.lightTextPrimary,
+            ),
+            onPressed: () => Navigator.pop(context),
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Calendar',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
+          title: Text(
+            _isStartDateSelection ? 'Select Start Date' : 'Calendar',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              _buildLegend(theme),
-              const SizedBox(height: 16),
-              _buildCalendar(theme),
-              const SizedBox(height: 24),
-              _buildSelectedDayInfo(theme, selectedDayStatus),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _toggleRelapse,
-                  style: selectedDayStatus == DayStatus.relapse
-                      ? ElevatedButton.styleFrom(
-                          backgroundColor:
-                              AppColors.lightError.withOpacity(0.1),
-                          foregroundColor: AppColors.lightError,
-                          elevation: 0,
-                          side: const BorderSide(
-                              color: AppColors.lightError, width: 1.5),
-                        )
-                      : null,
-                  child: Text(
-                    selectedDayStatus == DayStatus.relapse
-                        ? 'Remove Relapse'
-                        : 'Add Relapse',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: selectedDayStatus == DayStatus.relapse
-                          ? AppColors.lightError
-                          : AppColors.white,
+        body: const Center(
+          child: Text('Please log in to view calendar'),
+        ),
+      );
+    }
+
+    return StreamBuilder<HabitDataWithRelapses?>(
+      stream: _habitService.getHabitDataStream(user.uid),
+      builder: (context, snapshot) {
+        final dataWithRelapses = snapshot.data;
+        final habitData = dataWithRelapses?.habitData ?? HabitData.empty();
+        final relapsePeriods = dataWithRelapses?.relapsePeriods ?? [];
+        final selectedDayStatus = _getDayStatus(habitData, relapsePeriods, _selectedDay);
+
+        return Scaffold(
+          backgroundColor: AppColors.lightBackground,
+          appBar: AppBar(
+            backgroundColor: AppColors.lightBackground,
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppColors.lightTextPrimary,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              _isStartDateSelection ? 'Select Start Date' : 'Calendar',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 20,
+              ),
+            ),
+          ),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildLegend(theme),
+                        const SizedBox(height: 16),
+                        _buildCalendar(theme, habitData, relapsePeriods),
+                        const SizedBox(height: 24),
+                        _buildSelectedDayInfo(theme, selectedDayStatus, habitData, relapsePeriods),
+                        const SizedBox(height: 16),
+                        if (_isStartDateSelection)
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleStartDateSelection,
+                              child: Text(
+                                'Set Start Date',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          )
+                        else if (selectedDayStatus == DayStatus.relapse && _canEditDate(_selectedDay))
+                          // Show "Remove Relapse" button when day has relapse, regardless of allowAddRelapse
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => _toggleRelapse(habitData, relapsePeriods),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    AppColors.lightError.withOpacity(0.1),
+                                foregroundColor: AppColors.lightError,
+                                elevation: 0,
+                                side: const BorderSide(
+                                    color: AppColors.lightError, width: 1.5),
+                              ),
+                              child: Text(
+                                'Remove Relapse',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.lightError,
+                                ),
+                              ),
+                            ),
+                          )
+                        else if (_shouldShowAddRelapse && _canEditDate(_selectedDay) && selectedDayStatus != DayStatus.relapse)
+                          // Show "Add Relapse" button only when allowAddRelapse is true and day doesn't have relapse
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => _toggleRelapse(habitData, relapsePeriods),
+                              child: Text(
+                                'Add Relapse',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.lightError.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.lightError.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              _errorMessage!,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.lightError,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                      ],
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -169,7 +468,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   /// Builds the main TableCalendar widget
-  Widget _buildCalendar(ThemeData theme) {
+  Widget _buildCalendar(ThemeData theme, HabitData habitData, List<RelapsePeriod> relapsePeriods) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -190,7 +489,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
           });
         },
         onPageChanged: (focusedDay) {
-          _focusedDay = focusedDay;
+          setState(() {
+            _focusedDay = focusedDay;
+          });
         },
         // --- STYLING ---
         headerStyle: HeaderStyle(
@@ -215,9 +516,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
         calendarBuilders: CalendarBuilders(
           // Custom builder for the day cells
           prioritizedBuilder: (context, day, focusedDay) {
-            final status = _getDayStatus(day);
+            final status = _getDayStatus(habitData, relapsePeriods, day);
             final isSelected = isSameDay(day, _selectedDay);
             final isOutside = day.month != focusedDay.month;
+            final today = DateTime.now();
+            final todayNormalized = DateTime(today.year, today.month, today.day);
+            final dayNormalized = DateTime(day.year, day.month, day.day);
+            final isToday = dayNormalized == todayNormalized;
+            final isTodayRelapsed = isToday && _isTodayRelapsed(habitData, relapsePeriods);
 
             Color bgColor = AppColors.transparent;
             Color textColor = AppColors.lightTextPrimary;
@@ -234,6 +540,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
               bgColor = AppColors.lightPrimary;
               textColor = AppColors.white;
               fontWeight = FontWeight.w600;
+            } else if (status == DayStatus.notStarted) {
+              textColor = AppColors.lightTextTertiary;
             }
 
             if (isSelected) {
@@ -251,14 +559,31 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 shape: BoxShape.circle,
                 border: border,
               ),
-              child: Center(
-                child: Text(
-                  '${day.day}',
-                  style: theme.textTheme.bodyMedium!.copyWith(
-                    color: textColor,
-                    fontWeight: fontWeight,
+              child: Stack(
+                children: [
+                  Center(
+                    child: Text(
+                      '${day.day}',
+                      style: theme.textTheme.bodyMedium!.copyWith(
+                        color: textColor,
+                        fontWeight: fontWeight,
+                      ),
+                    ),
                   ),
-                ),
+                  if (isTodayRelapsed)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AppColors.lightWarning,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             );
           },
@@ -268,7 +593,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   /// Builds the bottom card showing selected day's info
-  Widget _buildSelectedDayInfo(ThemeData theme, DayStatus status) {
+  Widget _buildSelectedDayInfo(
+    ThemeData theme,
+    DayStatus status,
+    HabitData habitData,
+    List<RelapsePeriod> relapsePeriods,
+  ) {
     IconData icon;
     Color iconColor;
     String text;
@@ -277,18 +607,40 @@ class _CalendarScreenState extends State<CalendarScreen> {
       case DayStatus.relapse:
         icon = Icons.error_outline_rounded;
         iconColor = AppColors.lightError;
-        text = 'Relapse on this day';
+        // Find the trigger for this relapse
+        final relapse = relapsePeriods.firstWhere(
+          (r) {
+            final relapseDate = DateTime(
+              r.date.year,
+              r.date.month,
+              r.date.day,
+            );
+            final selectedDate = DateTime(
+              _selectedDay.year,
+              _selectedDay.month,
+              _selectedDay.day,
+            );
+            return relapseDate == selectedDate;
+          },
+          orElse: () => RelapsePeriod(date: _selectedDay, trigger: 'Unknown'),
+        );
+        text = 'Relapse on this day\nTrigger: ${relapse.trigger}';
         break;
       case DayStatus.clean:
         icon = Icons.check_circle_rounded;
         iconColor = AppColors.lightPrimary;
         text = 'Clean day';
         break;
+      case DayStatus.notStarted:
+        icon = Icons.calendar_today_outlined;
+        iconColor = AppColors.lightTextTertiary;
+        text = 'Not started yet';
+        break;
       case DayStatus.none:
-      default:
         icon = Icons.check_circle_outline_rounded;
         iconColor = AppColors.lightSuccess;
         text = 'No relapses on this day';
+        break;
     }
 
     return Container(
@@ -326,11 +678,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
             children: [
               Icon(icon, color: iconColor, size: 20),
               const SizedBox(width: 12),
-              Text(
-                text,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: iconColor,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      text,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: iconColor,
+                      ),
+                    ),
+                    
+                  ],
                 ),
               ),
             ],

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:provider/provider.dart';
+import 'package:quit_habit/models/habit_data.dart';
+import 'package:quit_habit/providers/auth_provider.dart';
+import 'package:quit_habit/services/habit_service.dart';
 import 'package:quit_habit/screens/navbar/common/common_header.dart';
 import 'package:quit_habit/screens/navbar/home/calendar/calendar_screen.dart';
 import 'package:quit_habit/screens/navbar/home/report_relapse/report_relapse_screen.dart';
@@ -140,144 +144,204 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Builds the main "Day 34" streak card
-  /// Builds the main "Day 34" streak card
+  /// Builds the main streak card with real-time data
   Widget _buildStreakCard(BuildContext context, ThemeData theme) {
-    // This Container provides the shape, background, and clipping
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.hardEdge, // This clips the overlay circle
-      decoration: BoxDecoration(
-        color: AppColors.lightBlueBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.lightBlueBackground, width: 1),
-      ),
-      child: Stack(
-        children: [
-          // This Positioned widget is the overlay, drawn first (underneath)
-          Positioned(
-            top: -40,
-            right: -40,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.lightPrimary.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    final habitService = HabitService();
 
-          // This Padding holds the main content, drawn on top of the overlay
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Keep Going!',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: AppColors.lightTextPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(1),
-                      color: Colors.transparent,
-                      child: Image.asset(
-                        "images/icons/home_trophy.png",
-                        width: 31,
-                        height: 31,
-                      ),
-                      // child: const Icon(
-                      //   Icons.military_tech_outlined,
-                      //   color: AppColors.lightWarning,
-                      //   size: 31,
-                      // ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Day 34',
-                  style: theme.textTheme.displayLarge?.copyWith(
-                    fontSize: 44,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.lightTextPrimary,
+    if (user == null) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<HabitDataWithRelapses?>(
+      stream: habitService.getHabitDataStream(user.uid),
+      builder: (context, snapshot) {
+        final dataWithRelapses = snapshot.data;
+        final habitData = dataWithRelapses?.habitData;
+        final relapsePeriods = dataWithRelapses?.relapsePeriods ?? [];
+        final hasStartDate = habitData?.hasStartDate ?? false;
+        final currentStreak = hasStartDate && habitData != null
+            ? habitService.getCurrentStreak(habitData, relapsePeriods)
+            : 0;
+        final successRate = hasStartDate && habitData != null
+            ? habitService.getSuccessRate(habitData, relapsePeriods)
+            : 0.0;
+
+        // Calculate progress (simple milestone-based: 7, 30, 90, 365 days)
+        double progress = 0.0;
+        if (currentStreak > 0) {
+          if (currentStreak >= 365) {
+            progress = 1.0;
+          } else if (currentStreak >= 90) {
+            progress = 0.75 + ((currentStreak - 90) / 275) * 0.25;
+          } else if (currentStreak >= 30) {
+            progress = 0.5 + ((currentStreak - 30) / 60) * 0.25;
+          } else if (currentStreak >= 7) {
+            progress = 0.25 + ((currentStreak - 7) / 23) * 0.25;
+          } else {
+            progress = (currentStreak / 7) * 0.25;
+          }
+        }
+
+        // This Container provides the shape, background, and clipping
+        return Container(
+          width: double.infinity,
+          clipBehavior: Clip.hardEdge, // This clips the overlay circle
+          decoration: BoxDecoration(
+            color: AppColors.lightBlueBackground,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.lightBlueBackground, width: 1),
+          ),
+          child: Stack(
+            children: [
+              // This Positioned widget is the overlay, drawn first (underneath)
+              Positioned(
+                top: -40,
+                right: -40,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightPrimary.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(height: 16),
-                LinearProgressIndicator(
-                  value: 0.4, // Hardcoded to match image
-                  backgroundColor: AppColors.lightBorder.withOpacity(0.5),
-                  color: AppColors.lightTextPrimary,
-                  borderRadius: BorderRadius.circular(10),
-                  minHeight: 8,
-                ),
-                const SizedBox(height: 20),
-                Row(
+              ),
+
+              // This Padding holds the main content, drawn on top of the overlay
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          PersistentNavBarNavigator.pushNewScreen(
-                            context,
-                            screen: const CalendarScreen(),
-                            withNavBar: false,
-                            pageTransitionAnimation:
-                                PageTransitionAnimation.cupertino,
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: AppColors.lightPrimary,
-                            width: 1.5,
-                          ),
-                          minimumSize: const Size(0, 48),
-                          backgroundColor: AppColors.white,
-                          foregroundColor: AppColors.lightPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                hasStartDate ? 'Keep Going!' : 'Start Your Journey',
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  color: AppColors.lightTextPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (hasStartDate) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${successRate.toStringAsFixed(1)}% Success Rate',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.lightTextSecondary,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                        child: Text(
-                          'Complete',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: AppColors.lightPrimary,
+                        Container(
+                          padding: const EdgeInsets.all(1),
+                          color: Colors.transparent,
+                          child: Image.asset(
+                            "images/icons/home_trophy.png",
+                            width: 31,
+                            height: 31,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      hasStartDate ? 'Day $currentStreak' : 'Ready to begin?',
+                      style: theme.textTheme.displayLarge?.copyWith(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.lightTextPrimary,
+                      ),
+                    ),
+                    if (hasStartDate) ...[
+                      const SizedBox(height: 16),
+                      LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: AppColors.lightBorder.withOpacity(0.5),
+                        color: AppColors.lightTextPrimary,
+                        borderRadius: BorderRadius.circular(10),
+                        minHeight: 8,
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    if (!hasStartDate)
+                      // Show "Start your routine" button when no start date
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            PersistentNavBarNavigator.pushNewScreen(
+                              context,
+                              screen: const CalendarScreen(
+                                isStartDateSelection: true,
+                              ),
+                              withNavBar: false,
+                              pageTransitionAnimation:
+                                  PageTransitionAnimation.cupertino,
+                            );
+                          },
+                          style: theme.elevatedButtonTheme.style?.copyWith(
+                            minimumSize: WidgetStateProperty.all(
+                              const Size(0, 48),
+                            ),
+                          ),
+                          child: const Text('Start your routine'),
+                        ),
+                      )
+                    else
+                      // Always show "Report Relapse" button when start date exists
+                      // User can use it to add relapses for other dates
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            PersistentNavBarNavigator.pushNewScreen(
+                              context,
+                              screen: const ReportRelapseScreen(),
+                              withNavBar: false,
+                              pageTransitionAnimation:
+                                  PageTransitionAnimation.cupertino,
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(
+                              color: AppColors.lightError,
+                              width: 1.5,
+                            ),
+                            minimumSize: const Size(0, 48),
+                            backgroundColor: AppColors.white,
+                            foregroundColor: AppColors.lightError,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Report Relapse',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: AppColors.lightError,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          PersistentNavBarNavigator.pushNewScreen(
-                            context,
-                            screen: const ReportRelapseScreen(),
-                            withNavBar: false,
-                            pageTransitionAnimation:
-                                PageTransitionAnimation.cupertino,
-                          );
-                        },
-                        style: theme.elevatedButtonTheme.style?.copyWith(
-                          minimumSize: WidgetStateProperty.all(
-                            const Size(0, 48),
-                          ),
-                        ),
-                        child: const Text('Relapse'),
-                      ),
-                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -360,42 +424,104 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Builds the "Weekly Progress" section
+  /// Builds the "Weekly Progress" section with real-time data
   Widget _buildWeeklyProgress(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Weekly Progress',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppColors.lightTextPrimary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.lightBorder, width: 1.5),
-          ),
-          // --- THIS IS THE CORRECT CONTENT ---
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _WeekDay(day: 'Thu', status: 'done'),
-              _WeekDay(day: 'Fri', status: 'missed'),
-              _WeekDay(day: 'Sat', status: 'done'),
-              _WeekDay(day: 'Sun', status: 'done'),
-              _WeekDay(day: 'Mon', status: 'pending'),
-              _WeekDay(day: 'Tue', status: 'future'),
-              _WeekDay(day: 'Wed', status: 'future'),
-            ],
-          ),
-        ),
-      ],
+    return Builder(
+      builder: (context) {
+        final authProvider = Provider.of<AuthProvider>(context);
+        final user = authProvider.user;
+        final habitService = HabitService();
+
+        if (user == null) {
+          return const SizedBox.shrink();
+        }
+
+        return StreamBuilder<HabitDataWithRelapses?>(
+          stream: habitService.getHabitDataStream(user.uid),
+          builder: (context, snapshot) {
+            final dataWithRelapses = snapshot.data;
+            final habitData = dataWithRelapses?.habitData ?? HabitData.empty();
+            final relapsePeriods = dataWithRelapses?.relapsePeriods ?? [];
+            final weekStatuses = habitService.getWeeklyProgress(habitData, relapsePeriods);
+
+        // Get current week days (Monday to Sunday)
+        final today = DateTime.now();
+        final weekday = today.weekday; // 1 = Monday, 7 = Sunday
+        final daysFromMonday = weekday - 1;
+        final monday = DateTime(today.year, today.month, today.day)
+            .subtract(Duration(days: daysFromMonday));
+
+        final weekDays = <String>[];
+        final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+        for (int i = 0; i < 7; i++) {
+          weekDays.add(dayNames[i]);
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Weekly Progress',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.lightTextPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () {
+                PersistentNavBarNavigator.pushNewScreen(
+                  context,
+                  screen: const CalendarScreen(),
+                  withNavBar: false,
+                  pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.lightBorder, width: 1.5),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(7, (index) {
+                    final dayName = weekDays[index];
+                    final status = weekStatuses[index];
+                    final dayDate = monday.add(Duration(days: index));
+                    final todayNormalized =
+                        DateTime(today.year, today.month, today.day);
+                    final dayNormalized =
+                        DateTime(dayDate.year, dayDate.month, dayDate.day);
+                    final isToday = dayNormalized == todayNormalized;
+
+                    // Map status to display status
+                    String displayStatus;
+                    if (status == 'not_started') {
+                      displayStatus = 'not_started'; // Show "..."
+                    } else if (status == 'relapse') {
+                      displayStatus = 'missed'; // Show X
+                    } else if (status == 'clean') {
+                      displayStatus = 'done'; // Show checkmark
+                    } else if (isToday && status != 'relapse') {
+                      displayStatus = 'pending'; // Show pending icon
+                    } else {
+                      displayStatus = 'future'; // Show empty circle
+                    }
+
+                    return _WeekDay(day: dayName, status: displayStatus);
+                  }),
+                ),
+              ),
+            ),
+          ],
+        );
+          },
+        );
+      },
     );
   }
 
@@ -711,7 +837,7 @@ class _DistractionCard extends StatelessWidget {
 /// Helper widget for each day in the weekly progress bar
 class _WeekDay extends StatelessWidget {
   final String day;
-  final String status; // 'done', 'missed', 'pending', 'future'
+  final String status; // 'done', 'missed', 'pending', 'future', 'not_started'
 
   const _WeekDay({required this.day, required this.status});
 
@@ -733,6 +859,16 @@ class _WeekDay extends StatelessWidget {
       case 'pending':
         bgColor = AppColors.lightWarning;
         icon = const Icon(Icons.pending, color: AppColors.white, size: 14);
+        break;
+      case 'not_started':
+        bgColor = AppColors.lightBorder.withOpacity(0.5);
+        icon = Text(
+          '...',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.lightTextTertiary,
+            fontWeight: FontWeight.w600,
+          ),
+        );
         break;
       default: // 'future'
         bgColor = AppColors.lightBorder.withOpacity(0.5);

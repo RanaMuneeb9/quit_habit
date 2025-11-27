@@ -8,6 +8,7 @@ import 'package:quit_habit/screens/navbar/profile/my_data/my_data_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/notifications/notifications_screen.dart';
 import 'package:quit_habit/screens/paywall/success_rate_screen.dart';
 import 'package:quit_habit/services/user_service.dart';
+import 'package:quit_habit/services/habit_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:quit_habit/widgets/auth_gate.dart';
 import 'package:intl/intl.dart';
@@ -290,17 +291,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
 
           // Stats Row
-          IntrinsicHeight(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildStatItem(theme, '7', 'Day Streak'),
-                const VerticalDivider(color: AppColors.lightBorder),
-                _buildStatItem(theme, '2', 'Badges'),
-                const VerticalDivider(color: AppColors.lightBorder),
-                _buildStatItem(theme, '100%', 'Success'),
-              ],
-            ),
+          Builder(
+            builder: (context) {
+              final authProvider = Provider.of<AuthProvider>(context);
+              final user = authProvider.user;
+              final habitService = HabitService();
+
+              if (user == null) {
+                return IntrinsicHeight(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStatItem(theme, '0', 'Day Streak'),
+                      const VerticalDivider(color: AppColors.lightBorder),
+                      _buildStatItem(theme, '0', 'Badges'),
+                      const VerticalDivider(color: AppColors.lightBorder),
+                      _buildStatItem(theme, '0%', 'Success'),
+                    ],
+                  ),
+                );
+              }
+
+              return StreamBuilder<HabitDataWithRelapses?>(
+                stream: habitService.getHabitDataStream(user.uid),
+                builder: (context, snapshot) {
+                  final dataWithRelapses = snapshot.data;
+                  final habitData = dataWithRelapses?.habitData;
+                  final relapsePeriods = dataWithRelapses?.relapsePeriods ?? [];
+                  
+                  final currentStreak = habitData != null && habitData.hasStartDate
+                      ? habitService.getCurrentStreak(habitData, relapsePeriods)
+                      : 0;
+                  final successRate = habitData != null && habitData.hasStartDate
+                      ? habitService.getSuccessRate(habitData, relapsePeriods)
+                      : 0.0;
+
+                  return IntrinsicHeight(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildStatItem(theme, '$currentStreak', 'Day Streak'),
+                        const VerticalDivider(color: AppColors.lightBorder),
+                        _buildStatItem(theme, '2', 'Badges'),
+                        const VerticalDivider(color: AppColors.lightBorder),
+                        _buildStatItem(theme, '${successRate.toStringAsFixed(1)}%', 'Success'),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
           ),
           const SizedBox(height: 16),
 
@@ -579,90 +619,211 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// Builds the "Stats" content (Tab 1)
   Widget _buildStatsContent(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Your Statistics',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: AppColors.lightTextPrimary,
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Stats Grid
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.6,
-          children: [
-            _buildStatGridItem(theme, '7', 'Total Days',
-                Icons.calendar_today_rounded, const Color(0xFF22C55E)),
-            _buildStatGridItem(theme, '2', 'Challenges',
-                Icons.emoji_events_rounded, const Color(0xFF8B5CF6)),
-            _buildStatGridItem(theme, '\$36', 'Money Saved',
-                Icons.savings_rounded, const Color(0xFFF59E0B)),
-            _buildStatGridItem(theme, '100%', 'Success Rate',
-                Icons.track_changes_rounded, const Color(0xFFEF4444)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // 7-Day Progress
-        Text(
-          '7-Day Progress',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: AppColors.lightTextPrimary,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          height: 200,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
+    return Builder(
+      builder: (context) {
+        final authProvider = Provider.of<AuthProvider>(context);
+        final user = authProvider.user;
+        final habitService = HabitService();
+
+        if (user == null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Center(
-                  child: Text(
-                    'Graph Placeholder',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: AppColors.lightTextTertiary),
-                  ),
+              Text(
+                'Your Statistics',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                  color: AppColors.lightTextPrimary,
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                    .map((day) => Text(
-                          day,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.lightTextSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ))
-                    .toList(),
+              const SizedBox(height: 12),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.6,
+                children: [
+                  _buildStatGridItem(theme, '0', 'Total Days',
+                      Icons.calendar_today_rounded, const Color(0xFF22C55E)),
+                  _buildStatGridItem(theme, '0', 'Challenges',
+                      Icons.emoji_events_rounded, const Color(0xFF8B5CF6)),
+                  _buildStatGridItem(theme, '\$0', 'Money Saved',
+                      Icons.savings_rounded, const Color(0xFFF59E0B)),
+                  _buildStatGridItem(theme, '0%', 'Success Rate',
+                      Icons.track_changes_rounded, const Color(0xFFEF4444)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '7-Day Progress',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                  color: AppColors.lightTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                height: 200,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          'Graph Placeholder',
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: AppColors.lightTextTertiary),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                          .map((day) => Text(
+                                day,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppColors.lightTextSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                ),
               ),
             ],
-          ),
-        ),
-      ],
+          );
+        }
+
+        return StreamBuilder<HabitDataWithRelapses?>(
+          stream: habitService.getHabitDataStream(user.uid),
+          builder: (context, snapshot) {
+            final dataWithRelapses = snapshot.data;
+            final habitData = dataWithRelapses?.habitData;
+            final relapsePeriods = dataWithRelapses?.relapsePeriods ?? [];
+
+            // Calculate total days since start
+            int totalDays = 0;
+            if (habitData != null && habitData.hasStartDate) {
+              final today = DateTime.now();
+              final todayNormalized = DateTime(today.year, today.month, today.day);
+              final startDateNormalized = DateTime(
+                habitData.startDate!.year,
+                habitData.startDate!.month,
+                habitData.startDate!.day,
+              );
+              totalDays = todayNormalized.difference(startDateNormalized).inDays + 1;
+            }
+
+            // Calculate success rate
+            final successRate = habitData != null && habitData.hasStartDate
+                ? habitService.getSuccessRate(habitData, relapsePeriods)
+                : 0.0;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your Statistics',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 20,
+                    color: AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Stats Grid
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.6,
+                  children: [
+                    _buildStatGridItem(theme, '$totalDays', 'Total Days',
+                        Icons.calendar_today_rounded, const Color(0xFF22C55E)),
+                    _buildStatGridItem(theme, '2', 'Challenges',
+                        Icons.emoji_events_rounded, const Color(0xFF8B5CF6)),
+                    _buildStatGridItem(theme, '\$36', 'Money Saved',
+                        Icons.savings_rounded, const Color(0xFFF59E0B)),
+                    _buildStatGridItem(theme, '${successRate.toStringAsFixed(1)}%', 'Success Rate',
+                        Icons.track_changes_rounded, const Color(0xFFEF4444)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // 7-Day Progress
+                Text(
+                  '7-Day Progress',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 20,
+                    color: AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  height: 200,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'Graph Placeholder',
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(color: AppColors.lightTextTertiary),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                            .map((day) => Text(
+                                  day,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: AppColors.lightTextSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

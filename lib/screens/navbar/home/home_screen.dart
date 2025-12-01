@@ -9,6 +9,9 @@ import 'package:quit_habit/screens/navbar/common/common_header.dart';
 import 'package:quit_habit/screens/navbar/home/calendar/calendar_screen.dart';
 import 'package:quit_habit/screens/navbar/home/report_relapse/report_relapse_screen.dart';
 import 'package:quit_habit/screens/navbar/tools/tools_screen.dart';
+import 'package:quit_habit/screens/navbar/tools/breathing/breathing_screen.dart';
+import 'package:quit_habit/screens/navbar/tools/jumping_jacks/jumping_jacks_screen.dart';
+import 'package:quit_habit/screens/navbar/tools/meditation/meditation_screen.dart';
 import 'package:quit_habit/screens/paywall/success_rate_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
@@ -375,6 +378,14 @@ class HomeScreen extends StatelessWidget {
                 label: 'Breathing',
                 bgColor: AppColors.lightRed.withOpacity(0.1),
                 iconBgColor: AppColors.lightRed,
+                onTap: () {
+                  PersistentNavBarNavigator.pushNewScreen(
+                    context,
+                    screen: const BreathingScreen(),
+                    withNavBar: false,
+                    pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
@@ -385,6 +396,14 @@ class HomeScreen extends StatelessWidget {
                 label: 'Exercise',
                 bgColor: AppColors.lightBlueDistraction, // Corrected Color
                 iconBgColor: AppColors.lightPrimary,
+                onTap: () {
+                  PersistentNavBarNavigator.pushNewScreen(
+                    context,
+                    screen: const JumpingJacksScreen(),
+                    withNavBar: false,
+                    pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                  );
+                },
               ),
             ),
             const SizedBox(width: 12),
@@ -395,6 +414,14 @@ class HomeScreen extends StatelessWidget {
                 label: 'Meditate',
                 bgColor: AppColors.lightGreenBackground, // Corrected Color
                 iconBgColor: AppColors.lightSuccess,
+                onTap: () {
+                  PersistentNavBarNavigator.pushNewScreen(
+                    context,
+                    screen: const MeditationScreen(),
+                    withNavBar: false,
+                    pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                  );
+                },
               ),
             ),
           ],
@@ -766,6 +793,7 @@ class _DistractionCard extends StatelessWidget {
   final String label;
   final Color bgColor;
   final Color iconBgColor;
+  final VoidCallback? onTap;
 
   const _DistractionCard({
     // required this.icon,
@@ -773,41 +801,45 @@ class _DistractionCard extends StatelessWidget {
     required this.label,
     required this.bgColor,
     required this.iconBgColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: bgColor, // Corrected
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: iconBgColor.withOpacity(0.2), width: 1),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: bgColor, // Corrected
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: iconBgColor.withOpacity(0.2), width: 1),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                shape: BoxShape.circle,
+              ),
+              // child: Icon(icon, color: AppColors.white, size: 24),
+              child: Image.asset(image),
             ),
-            // child: Icon(icon, color: AppColors.white, size: 24),
-            child: Image.asset(image),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.lightTextPrimary,
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.lightTextPrimary,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

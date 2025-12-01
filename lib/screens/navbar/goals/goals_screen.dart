@@ -29,8 +29,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
               children: [
                 const SizedBox(height: 20), // Reduced padding
                 _buildHeader(theme),
-                const SizedBox(height: 20), // Reduced padding
-                _buildBadgeCollection(theme),
+                // const SizedBox(height: 20), // Reduced padding
+                // _buildBadgeCollection(theme),
                 const SizedBox(height: 20), // Reduced padding
                 _buildTabs(theme),
                 const SizedBox(height: 20), // Reduced padding

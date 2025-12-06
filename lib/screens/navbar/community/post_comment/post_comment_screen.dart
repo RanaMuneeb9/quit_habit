@@ -199,7 +199,7 @@ class _PostCommentScreenState extends State<PostCommentScreen> {
         replyToUserId = _replyingTo!.userId;
       }
 
-      final commentId = await _communityService.addComment(
+      await _communityService.addComment(
         postId: widget.post.id,
         userId: user.uid,
         text: text,
@@ -210,38 +210,20 @@ class _PostCommentScreenState extends State<PostCommentScreen> {
       if (mounted) {
         _commentController.clear();
         
-        // Only optimistically add top-level comments
-        if (parentId == null) {
-          final newComment = CommunityComment(
-            id: commentId,
-            userId: user.uid,
-            text: text,
-            timestamp: DateTime.now(),
-            parentId: null,
-            replyToUserId: null,
-            replyCount: 0,
-          );
-          
-          setState(() {
-            _comments.add(newComment);
-            _replyingTo = null;
-          });
-          
-          // Scroll to bottom to show new comment
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scrollController.hasClients) {
-              _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          });
-        } else {
-          setState(() {
-            _replyingTo = null;
-          });
-        }
+        setState(() {
+          _replyingTo = null;
+        });
+        
+        // Scroll to bottom after a short delay to let the stream update
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted && _scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
         
         FocusScope.of(context).unfocus();
       }
@@ -653,21 +635,40 @@ class _CommentCardState extends State<_CommentCard> {
   List<CommunityComment> _replies = [];
   bool _isLoadingReplies = false;
   StreamSubscription<List<CommunityComment>>? _repliesSubscription;
+  StreamSubscription<CommunityComment?>? _commentSubscription;
+  CommunityComment? _currentComment; // Current comment with real-time updates
 
   @override
   void initState() {
     super.initState();
+    _currentComment = widget.comment;
+    
     if (widget.userCache.containsKey(widget.comment.userId)) {
       _userInfo = widget.userCache[widget.comment.userId];
       _isLoadingUser = false;
     } else {
       _fetchUserInfo();
     }
+    
+    // Only subscribe to comment updates for parent-level comments
+    // (to watch for replyCount changes)
+    if (widget.comment.parentId == null) {
+      _commentSubscription = _communityService
+          .getCommentStream(widget.postId, widget.comment.id)
+          .listen((comment) {
+        if (comment != null && mounted) {
+          setState(() {
+            _currentComment = comment;
+          });
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     _repliesSubscription?.cancel();
+    _commentSubscription?.cancel();
     super.dispose();
   }
 
@@ -821,17 +822,20 @@ class _CommentCardState extends State<_CommentCard> {
                             height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        GestureDetector(
-                          onTap: () => widget.onReply(widget.comment),
-                          child: Text(
-                            'Reply',
-                            style: widget.theme.textTheme.labelSmall?.copyWith(
-                              color: AppColors.lightPrimary,
-                              fontWeight: FontWeight.w600,
+                        // Only show Reply button for top-level comments (not inner replies)
+                        if (widget.comment.parentId == null) ...[
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () => widget.onReply(widget.comment),
+                            child: Text(
+                              'Reply',
+                              style: widget.theme.textTheme.labelSmall?.copyWith(
+                                color: AppColors.lightPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -842,7 +846,7 @@ class _CommentCardState extends State<_CommentCard> {
         ),
         
         // Replies Section
-        if (widget.comment.replyCount > 0)
+        if ((_currentComment?.replyCount ?? 0) > 0)
           Padding(
             padding: const EdgeInsets.only(left: 42.0, top: 8.0),
             child: Column(
@@ -860,7 +864,7 @@ class _CommentCardState extends State<_CommentCard> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'View ${widget.comment.replyCount} replies',
+                          'View ${_currentComment?.replyCount ?? 0} ${(_currentComment?.replyCount ?? 0) == 1 ? "reply" : "replies"}',
                           style: widget.theme.textTheme.labelSmall?.copyWith(
                             color: AppColors.lightTextSecondary,
                             fontWeight: FontWeight.w600,

@@ -192,12 +192,24 @@ class CommunityService {
         .doc(postId)
         .collection('comments')
         .where('parentId', isNull: true)
+        .where('timestamp', isGreaterThan: afterTimestamp)
         .orderBy('timestamp', descending: false)
-        .orderBy(FieldPath.documentId)
-        .startAfter([afterTimestamp, '']) // Start after this timestamp, any ID
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) => CommunityComment.fromFirestore(doc)).toList();
+    });
+  }
+
+  /// Get a stream of a specific comment to watch for updates (e.g., replyCount)
+  Stream<CommunityComment?> getCommentStream(String postId, String commentId) {
+    return _postsRef
+        .doc(postId)
+        .collection('comments')
+        .doc(commentId)
+        .snapshots()
+        .map((doc) {
+      if (!doc.exists) return null;
+      return CommunityComment.fromFirestore(doc);
     });
   }
 

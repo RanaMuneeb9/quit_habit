@@ -45,4 +45,24 @@ class CommunityComment {
       'replyCount': replyCount,
     };
   }
+
+  CommunityComment copyWith({
+    String? id,
+    String? userId,
+    String? text,
+    DateTime? timestamp,
+    String? parentId,
+    String? replyToUserId,
+    int? replyCount,
+  }) {
+    return CommunityComment(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      text: text ?? this.text,
+      timestamp: timestamp ?? this.timestamp,
+      parentId: parentId ?? this.parentId,
+      replyToUserId: replyToUserId ?? this.replyToUserId,
+      replyCount: replyCount ?? this.replyCount,
+    );
+  }
 }

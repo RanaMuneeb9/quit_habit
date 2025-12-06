@@ -80,6 +80,8 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
   }
 
   void _handleLikeToggle(String postId) {
+    // Only optimistically update the heart icon (liked status)
+    // The count will be updated by the real-time stream
     setState(() {
       if (_likedPostIds.contains(postId)) {
         _likedPostIds.remove(postId);
@@ -257,6 +259,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                       
                       final post = _posts[index];
                       final isLiked = _likedPostIds.contains(post.id);
+                      
                       final postWithLikeStatus = post.copyWith(
                         isLikedByMe: isLiked,
                       );
@@ -307,6 +310,19 @@ class _CommunityPostCardState extends State<_CommunityPostCard> {
   void initState() {
     super.initState();
     _fetchUserInfo();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CommunityPostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Refetch user info if the post's userId changed (different post)
+    if (oldWidget.post.userId != widget.post.userId) {
+      setState(() {
+        _userInfo = null;
+        _isLoadingUser = true;
+      });
+      _fetchUserInfo();
+    }
   }
 
   Future<void> _fetchUserInfo() async {

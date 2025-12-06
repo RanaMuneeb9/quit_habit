@@ -162,6 +162,10 @@ class CommunityService {
   }
 
   /// Get a page of comments (One-time fetch)
+  /// 
+  /// IMPORTANT: When paginating with [startAfter], the [descending] parameter
+  /// must remain consistent across all pages. Changing the sort direction
+  /// mid-pagination will result in incorrect results.
   Future<List<CommunityComment>> getComments({
     required String postId,
     List<Object?>? startAfter,

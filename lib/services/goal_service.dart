@@ -78,6 +78,13 @@ class GoalService {
     return controller.stream;
   }
 
+  // Fetch All Goals (Unfiltered)
+  Stream<List<Goal>> getAllGoals() {
+    return _goalsCollection.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => Goal.fromFirestore(doc)).toList();
+    });
+  }
+
   // Fetch User's Active Goals
   Stream<List<UserGoal>> getUserActiveGoals(String userId) {
     return _getUserGoalsCollection(userId)
@@ -273,6 +280,8 @@ class GoalService {
       // Fetch goal doc early to satisfy transaction read-before-write rule
       final goalDoc = await transaction.get(_goalsCollection.doc(userGoal.goalId));
 
+      final Map<String, dynamic> updates = {};
+
       // Check daily limit using lastUpdateDayString
       if (checkDailyLimit) {
         final todayString = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
@@ -282,9 +291,7 @@ class GoalService {
         }
         
         // Update lastUpdateDayString
-        transaction.update(userGoalRef, {
-          'lastUpdateDayString': todayString,
-        });
+        updates['lastUpdateDayString'] = todayString;
       }
       
       int currentProgress = userGoal.progress;
@@ -315,7 +322,7 @@ class GoalService {
 
       int newProgress = currentProgress + amountToAdd;
 
-      transaction.update(userGoalRef, {
+      updates.addAll({
         'progress': newProgress,
         'lastUpdateDate': FieldValue.serverTimestamp(), // Use server time
         'lastServerTimestamp': FieldValue.serverTimestamp(),
@@ -323,11 +330,13 @@ class GoalService {
 
       // Check completion
       if (newProgress >= userGoal.goalTargetValue) {
-        transaction.update(userGoalRef, {
+        updates.addAll({
           'status': UserGoalStatus.completed.name,
           'completedDate': FieldValue.serverTimestamp(),
         });
       }
+
+      transaction.update(userGoalRef, updates);
     });
   }
 
@@ -456,19 +465,21 @@ class GoalService {
            if (freshUserGoal.status != UserGoalStatus.active) return;
 
            if (freshUserGoal.progress != currentStreak) {
-             transaction.update(doc.reference, {
+             final Map<String, dynamic> updates = {
                'progress': currentStreak,
                'lastUpdateDate': FieldValue.serverTimestamp(),
                'lastServerTimestamp': FieldValue.serverTimestamp(),
-             });
+             };
              
              // Check completion
              if (currentStreak >= freshUserGoal.goalTargetValue) {
-               transaction.update(doc.reference, {
+               updates.addAll({
                  'status': UserGoalStatus.completed.name,
                  'completedDate': FieldValue.serverTimestamp(),
                });
              }
+             
+             transaction.update(doc.reference, updates);
            }
          });
       }

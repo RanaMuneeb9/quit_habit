@@ -5,6 +5,7 @@ import 'package:quit_habit/models/goal.dart';
 import 'package:quit_habit/models/user_goal.dart';
 import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/screens/navbar/chat/chat_onboarding_screen.dart';
+import 'package:quit_habit/screens/navbar/chat/chat_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/my_data/my_data_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/notifications/notifications_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/invite_friends/invite_friends_screen.dart';
@@ -16,6 +17,7 @@ import 'package:quit_habit/services/goal_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:quit_habit/widgets/auth_gate.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -549,7 +551,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // For a "Collection" feel, usually you show all slots.
         // Let's fetch all available goals to map them.
         return StreamBuilder<List<Goal>>(
-          stream: goalService.getAvailableGoalsFiltered(user.uid),
+          stream: goalService.getAllGoals(),
           builder: (context, goalsSnapshot) {
             if (!goalsSnapshot.hasData) {
               return const SizedBox.shrink();
@@ -649,7 +651,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               iconPath,
               width: 32,
               height: 32,
-              color: isEarned ? null : AppColors.lightTextTertiary,
+              color: isEarned ? null : Colors.grey, // Grey out if locked
+              colorBlendMode: isEarned ? null : BlendMode.srcIn,
               errorBuilder: (context, error, stackTrace) => Icon(
                 Icons.emoji_events_rounded,
                 color: isEarned ? iconColor : AppColors.lightTextTertiary,
@@ -719,10 +722,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   _buildStatGridItem(theme, '0', 'Total Days',
                       Icons.calendar_today_rounded, const Color(0xFF22C55E)),
-                  _buildStatGridItem(theme, '0', 'Challenges',
+                  _buildStatGridItem(theme, '0', 'Badges',
                       Icons.emoji_events_rounded, const Color(0xFF8B5CF6)),
-                  _buildStatGridItem(theme, '\$0', 'Money Saved',
-                      Icons.savings_rounded, const Color(0xFFF59E0B)),
                   _buildStatGridItem(theme, '0%', 'Success Rate',
                       Icons.track_changes_rounded, const Color(0xFFEF4444)),
                 ],
@@ -829,10 +830,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _buildStatGridItem(theme, '$totalDays', 'Total Days',
                             Icons.calendar_today_rounded, const Color(0xFF22C55E)),
-                        _buildStatGridItem(theme, '$completedGoalsCount', 'Challenges',
+                        _buildStatGridItem(theme, '$completedGoalsCount', 'Badges',
                             Icons.emoji_events_rounded, const Color(0xFF8B5CF6)),
-                        _buildStatGridItem(theme, '\$36', 'Money Saved',
-                            Icons.savings_rounded, const Color(0xFFF59E0B)),
                         _buildStatGridItem(theme, '${successRate.toStringAsFixed(1)}%', 'Success Rate',
                             Icons.track_changes_rounded, const Color(0xFFEF4444)),
                       ],
@@ -1117,14 +1116,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'Get help and contact support',
           Icons.chat_bubble_outline_rounded,
           const Color(0xFF9CA3AF), // Grey
-          onTap: () {
-            PersistentNavBarNavigator.pushNewScreen(
-              context,
-              // screen: const FaqScreen(),
-              screen: const ChatOnboardingScreen(),
-              withNavBar: false,
-              pageTransitionAnimation: PageTransitionAnimation.cupertino,
-            );
+          onTap: () async {
+            final prefs = await SharedPreferences.getInstance();
+            final hasSeenOnboarding = prefs.getBool('hasSeenAIChatOnboarding') ?? false;
+            
+            if (context.mounted) {
+              PersistentNavBarNavigator.pushNewScreen(
+                context,
+                screen: hasSeenOnboarding ? const ChatScreen() : const ChatOnboardingScreen(),
+                withNavBar: false,
+                pageTransitionAnimation: PageTransitionAnimation.cupertino,
+              );
+            }
           },
         ),
         const SizedBox(height: 8),

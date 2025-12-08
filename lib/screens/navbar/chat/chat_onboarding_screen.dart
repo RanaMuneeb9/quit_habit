@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:quit_habit/screens/navbar/chat/chat_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatOnboardingScreen extends StatelessWidget {
   const ChatOnboardingScreen({super.key});
@@ -102,14 +103,19 @@ class ChatOnboardingScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 56, // Slightly taller for emphasis
                 child: ElevatedButton(
-                  onPressed: () {
-                    PersistentNavBarNavigator.pushNewScreen(
-                      context,
-                      screen: const ChatScreen(),
-                      withNavBar: false,
-                      pageTransitionAnimation:
-                          PageTransitionAnimation.cupertino,
-                    );
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('hasSeenAIChatOnboarding', true);
+
+                    if (context.mounted) {
+                      PersistentNavBarNavigator.pushNewScreen(
+                        context,
+                        screen: const ChatScreen(),
+                        withNavBar: false,
+                        pageTransitionAnimation:
+                            PageTransitionAnimation.cupertino,
+                      );
+                    }
                   },
                   style: theme.elevatedButtonTheme.style?.copyWith(
                     backgroundColor: WidgetStateProperty.all(AppColors.lightPrimary),

@@ -341,18 +341,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.lightSuccess.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.emoji_events_rounded,
-              color: AppColors.lightSuccess,
-              size: 26,
-            ),
-          ),
+          _buildGoalIcon(userGoal.badgeIcon, isLocked: false),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -440,19 +429,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.lightPrimary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.track_changes_rounded,
-                  color: AppColors.lightPrimary,
-                  size: 26,
-                ),
-              ),
+              _buildGoalIcon(userGoal.badgeIcon, isLocked: false), // Show active challenge as unlocked/visible
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -551,19 +528,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.lightSuccess.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.emoji_events_outlined,
-                  color: AppColors.lightSuccess,
-                  size: 26,
-                ),
-              ),
+              _buildGoalIcon(goal.badgeIcon, isLocked: false), // Show available goals with their icon
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -587,7 +552,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('🏆', style: TextStyle(fontSize: 20)),
+              // const Text('🏆', style: TextStyle(fontSize: 20)),
             ],
           ),
           const SizedBox(height: 12),
@@ -640,6 +605,48 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGoalIcon(String? iconPath, {bool isLocked = true}) {
+    // If no icon path, show generic fallback
+    if (iconPath == null || iconPath.isEmpty) {
+      return Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppColors.lightBackground,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(
+          Icons.emoji_events_rounded,
+          color: AppColors.lightTextTertiary,
+          size: 24,
+        ),
+      );
+    }
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: AppColors.lightBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.asset(
+          iconPath,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => const Icon(
+            Icons.emoji_events_rounded,
+            color: AppColors.lightTextTertiary,
+            size: 24,
+          ),
+          color: isLocked ? Colors.grey : null, // Grey out if locked
+          colorBlendMode: isLocked ? BlendMode.srcIn : null,
+        ),
       ),
     );
   }

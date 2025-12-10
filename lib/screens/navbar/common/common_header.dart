@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/services/habit_service.dart';
+import 'package:quit_habit/services/plan_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
 class CommonHeader extends StatelessWidget {
@@ -54,19 +55,8 @@ class CommonHeader extends StatelessWidget {
           },
         ),
         const SizedBox(width: 8),
-        // _buildStatBadge(
-        //   theme,
-        //   // icon: Icons.diamond_outlined,
-        //   image: "images/icons/header_diamond.png",
-        //   label: '1',
-        //   bgColor: AppColors.badgeBlue,
-        //   iconColor: AppColors.lightPrimary,
-        //   textColor: AppColors.lightPrimary,
-        // ),
-        // const SizedBox(width: 8),
         _buildStatBadge(
           theme,
-          // icon: Icons.monetization_on_outlined,
           image: "images/icons/header_coin.png",
           label: '0',
           bgColor: AppColors.badgeOrange,
@@ -74,37 +64,69 @@ class CommonHeader extends StatelessWidget {
           textColor: AppColors.lightWarning,
         ),
         const Spacer(),
-        // Pro Button from home_screen.dart
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.proColor,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              // const Icon(
-              //   FontAwesome.crown_solid,
-              //   color: AppColors.white,
-              //   size: 16,
-              // ),
-              Image.asset(
-                "images/icons/pro_crown.png",
-                width: 18,
-                height: 18,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Pro',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+        // Pro Badge - only shown for Pro users
+        if (user != null)
+          StreamBuilder<({bool isPro, bool hasStarted, DateTime? planStartedAt})>(
+            stream: PlanService.instance.getUserPlanStatusStream(user.uid),
+            builder: (context, snapshot) {
+              // Handle loading state - show placeholder
+              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightTextTertiary.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const SizedBox(
+                    width: 60, // Approximate width of "Pro" badge
+                    height: 18,
+                  ),
+                );
+              }
+              
+              // Handle error state - log and show optimistic fallback
+              if (snapshot.hasError) {
+                debugPrint('❌ Error loading Pro status in header: ${snapshot.error}');
+                // Optimistically keep badge visible on error to avoid jarring UX
+                // User data streams are usually cached, so errors are rare
+                // Fall through to render badge based on last known state or default to hidden
+                // For now, hide on error but consider showing last known state in future
+                return const SizedBox.shrink();
+              }              
+              // Get Pro status from data
+              final isPro = snapshot.data?.isPro ?? false;
+              
+              if (!isPro) {
+                return const SizedBox.shrink(); // Hide for free users
+              }
+              
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.lightSuccess, // Green for Pro users
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ),
-            ],
+                child: Row(
+                  children: [
+                    Image.asset(
+                      "images/icons/pro_crown.png",
+                      width: 18,
+                      height: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Pro',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        ),
       ],
     );
   }

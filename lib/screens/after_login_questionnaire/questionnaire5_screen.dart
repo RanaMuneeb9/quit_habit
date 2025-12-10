@@ -117,7 +117,7 @@ class _Questionnaire5ScreenState extends State<Questionnaire5Screen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Question 5 of 5',
+                    'Question 4 of 4',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,

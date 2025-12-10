@@ -7,16 +7,33 @@ import 'package:quit_habit/screens/navbar/plan/plan_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/profile_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
-class NavBar extends StatelessWidget {
+class NavBar extends StatefulWidget {
   const NavBar({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    PersistentTabController controller = PersistentTabController(initialIndex: 0);
+  State<NavBar> createState() => _NavBarState();
+}
 
+class _NavBarState extends State<NavBar> {
+  late PersistentTabController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PersistentTabController(initialIndex: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return PersistentTabView(
       context,
-      controller: controller,
+      controller: _controller,
       screens: _buildScreens(),
       items: _navBarsItems(),
       backgroundColor: AppColors.white,
@@ -56,7 +73,7 @@ class NavBar extends StatelessWidget {
 
   List<Widget> _buildScreens() {
     return [
-      const HomeScreen(),
+      HomeScreen(controller: _controller),
       const GoalsScreen(),
       const CommunityHomeScreen(),
       const PlanScreen(),

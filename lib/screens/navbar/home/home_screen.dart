@@ -1,17 +1,22 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:quit_habit/models/habit_data.dart';
-import 'package:quit_habit/models/goal.dart';
+
 import 'package:quit_habit/models/user_goal.dart';
+import 'package:quit_habit/models/user_plan_mission.dart';
 import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/services/habit_service.dart';
 import 'package:quit_habit/services/goal_service.dart';
+import 'package:quit_habit/services/plan_service.dart';
 import 'package:quit_habit/screens/navbar/common/common_header.dart';
 import 'package:quit_habit/screens/navbar/home/calendar/calendar_screen.dart';
 import 'package:quit_habit/screens/navbar/home/report_relapse/report_relapse_screen.dart';
+import 'package:quit_habit/screens/navbar/plan/plan_detail_screen.dart';
 import 'package:quit_habit/screens/navbar/tools/tools_screen.dart';
 import 'package:quit_habit/screens/navbar/tools/breathing/breathing_screen.dart';
 import 'package:quit_habit/screens/navbar/tools/jumping_jacks/jumping_jacks_screen.dart';
@@ -21,7 +26,9 @@ import 'package:quit_habit/utils/app_colors.dart';
 import 'package:quit_habit/utils/tool_usage_tracker.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final PersistentTabController? controller;
+
+  const HomeScreen({super.key, this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -793,60 +800,232 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Builds the "Today's Plan" section
+  /// Builds the "Today's Plan" section with dynamic data from PlanService
   Widget _buildTodaysPlan(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      decoration: BoxDecoration(
-        color: AppColors.white, // White background
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.lightBorder, width: 1.5), // Light border
-      ),
-      child: Column(
-        children: [
-          // 1. Icon
-          Image.asset(
-            "images/icons/home_grass.png",
-            width: 28,
-            height: 28,
-          ),
-          const SizedBox(height: 16),
-          // 2. Day Status
-          RichText(
-            text: TextSpan(
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-              children: [
-                TextSpan(
-                  text: 'Day 3 ', // Hardcoded from design
-                  style: const TextStyle(color: AppColors.lightTextPrimary),
-                ),
-                TextSpan(
-                  text: '• Active', // Hardcoded from design
-                  style: const TextStyle(color: AppColors.lightSuccess),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          // 3. Tasks
-          // Using the _buildPlanItem helper already defined below
-          _buildPlanItem(
-            theme,
-            text: 'Make commitment to quit smoking day by day.', // From design
-            isDone: true, // From design
-          ),
-          const SizedBox(height: 16),
-          _buildPlanItem(
-            theme,
-            text: 'Establish immediate health benefits with quit habit', // From design
-            isDone: false, // From design
-          ),
-        ],
-      ),
+    return Builder(
+      builder: (context) {
+        final authProvider = Provider.of<AuthProvider>(context);
+        final user = authProvider.user;
+
+        if (user == null) {
+          return const SizedBox.shrink();
+        }
+
+        return StreamBuilder<({bool isPro, bool hasStarted, DateTime? planStartedAt})>(
+          stream: PlanService.instance.getUserPlanStatusStream(user.uid),
+          builder: (context, statusSnapshot) {
+            final status = statusSnapshot.data ?? (isPro: false, hasStarted: false, planStartedAt: null);
+
+            return StreamBuilder<UserPlanMission?>(
+              stream: PlanService.instance.getCurrentMissionStream(user.uid),
+              builder: (context, snapshot) {
+                // If loading or error, show nothing (plan section is optional)
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SizedBox.shrink();
+                }
+
+                final mission = snapshot.data;
+                
+                // If no mission, user hasn't started plan yet
+                if (mission == null) {
+                  return const SizedBox.shrink();
+                }
+
+                // Check if user has started plan but is no longer Pro
+                final hasStartedButNotPro = status.hasStarted && !status.isPro;
+
+                // Get status text
+                String statusText;
+                Color statusColor;
+                switch (mission.status) {
+                  case UserPlanMissionStatus.completed:
+                    statusText = '• Completed';
+                    statusColor = AppColors.lightSuccess;
+                    break;
+                  case UserPlanMissionStatus.inProgress:
+                    statusText = '• In Progress';
+                    statusColor = AppColors.planIconColor;
+                    break;
+                  case UserPlanMissionStatus.available:
+                    statusText = '• Available';
+                    statusColor = AppColors.lightPrimary;
+                    break;
+                  case UserPlanMissionStatus.locked:
+                    statusText = '• Locked';
+                    statusColor = AppColors.lightTextTertiary;
+                    break;
+                }
+
+                final cardContent = Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.lightBorder, width: 1.5),
+                  ),
+                  child: Column(
+                    children: [
+                      // Icon
+                      Image.asset(
+                        "images/icons/home_grass.png",
+                        width: 28,
+                        height: 28,
+                      ),
+                      const SizedBox(height: 16),
+                      // Day Status
+                      RichText(
+                        text: TextSpan(
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Day ${mission.dayNumber} ',
+                              style: const TextStyle(color: AppColors.lightTextPrimary),
+                            ),
+                            TextSpan(
+                              text: statusText,
+                              style: TextStyle(color: statusColor),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Mission title
+                      Text(
+                        mission.missionTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.lightTextPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      // Progress indicator for in-progress missions
+                      if (mission.status == UserPlanMissionStatus.inProgress ||
+                          mission.status == UserPlanMissionStatus.available)
+                        Column(
+                          children: [
+                            LinearProgressIndicator(
+                              value: mission.completionPercentage,
+                              backgroundColor: AppColors.lightBorder,
+                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.lightSuccess),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${(mission.completionPercentage * 100).toInt()}% complete',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColors.lightTextSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      // Tap to continue hint
+                      if (mission.status != UserPlanMissionStatus.completed &&
+                          mission.status != UserPlanMissionStatus.locked)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            'Tap to continue →',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.lightPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+
+                // If user has started plan but is no longer Pro, show blurred card
+                if (hasStartedButNotPro) {
+                  return Stack(
+                    children: [
+                      // Blurred card
+                      ImageFiltered(
+                        imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                        child: Opacity(
+                          opacity: 0.5,
+                          child: cardContent,
+                        ),
+                      ),
+                      // Overlay message
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.black.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.lock_outline_rounded,
+                                    color: AppColors.lightWarning,
+                                    size: 32,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Pro Required',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.lightTextPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Renew to continue your plan',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppColors.lightTextSecondary,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                // Normal card with tap functionality
+                return GestureDetector(
+                  onTap: () {
+                    if (mission.status != UserPlanMissionStatus.locked) {
+                      PersistentNavBarNavigator.pushNewScreen(
+                        context,
+                        screen: PlanDetailScreen(mission: mission),
+                        withNavBar: false,
+                        pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                      );
+                    }
+                  },
+                  child: cardContent,
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -881,68 +1060,171 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Builds the "Unlock Premium" card
-  Widget _buildPremiumCard(ThemeData theme, BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.lightOrangeBackground, // Corrected Color
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        children: [
-          // Icon(
-          //   Icons.workspace_premium_outlined,
-          //   color: AppColors.lightWarning,
-          //   size: 32,
-          // ),
-          Image.asset(
-                "images/icons/pro_crown.png",
-                width: 32,
-                height: 32,
-                color: AppColors.proColor
-              ),
-          const SizedBox(height: 12),
-          Text(
-            'Unlock Premium',
-            style: theme.textTheme.headlineMedium?.copyWith(
-              color: AppColors.lightTextPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Get unlimited challenges, advanced analytics, and exclusive tools!',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.lightTextSecondary,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              PersistentNavBarNavigator.pushNewScreen(
-                context,
-                screen: const SuccessRateScreen(),
-                withNavBar: false,
-                pageTransitionAnimation: PageTransitionAnimation.cupertino,
-              );
-            },
-            style: theme.elevatedButtonTheme.style?.copyWith(
-              backgroundColor: WidgetStateProperty.all(AppColors.proColor),
-              foregroundColor: WidgetStateProperty.all(AppColors.white),
-              minimumSize: WidgetStateProperty.all(
-                const Size(double.infinity, 50),
-              ),
-            ),
-            child: const Text('Upgrade to Pro'),
-          ),
-        ],
-      ),
-    );
-  }
+  /// Builds either "Unlock Premium" card (for free users) or "Start your Plan" card (for Pro users who haven't started)
+Widget _buildPremiumCard(ThemeData theme, BuildContext context) {
+  return Builder(
+    builder: (context) {
+      final authProvider = Provider.of<AuthProvider>(context);
+      final user = authProvider.user;
+
+      if (user == null) {
+        return const SizedBox.shrink();
+      }
+
+      // Use stream to check user's Pro status and plan status
+      return StreamBuilder<({bool isPro, bool hasStarted, DateTime? planStartedAt})>(
+        stream: PlanService.instance.getUserPlanStatusStream(user.uid),
+        builder: (context, snapshot) {
+          // Don't show loading - just hide if loading
+          if (!snapshot.hasData) {
+            return const SizedBox.shrink();
+          }
+
+          final status = snapshot.data!;
+
+          // If Pro and already started plan, don't show any card
+          if (status.isPro && status.hasStarted) {
+            return const SizedBox.shrink();
+          }
+
+          // If Pro but hasn't started plan, show "Start your Plan" card
+          if (status.isPro && !status.hasStarted) {
+            return _buildStartPlanCard(theme, context);
+          }
+
+          // Otherwise show "Unlock Premium" card
+          return _buildUnlockPremiumCard(theme, context);
+        },
+      );
+    },
+  );
 }
+
+/// Card shown to Pro users who haven't started their 90-day plan
+Widget _buildStartPlanCard(ThemeData theme, BuildContext context) {
+  return Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: AppColors.lightPrimary.withOpacity(0.05),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: AppColors.lightPrimary.withOpacity(0.2)),
+    ),
+    child: Column(
+      children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.lightPrimary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.rocket_launch_rounded,
+            color: AppColors.lightPrimary,
+            size: 28,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Start Your 90-Day Journey',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            color: AppColors.lightTextPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'You have Pro access! Begin your structured quit plan with daily missions and milestones.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.lightTextSecondary,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: controller == null ? null : () {
+            // Navigate to the Plan tab (index 3 in the bottom nav)
+            controller!.jumpToTab(3);
+          },          style: theme.elevatedButtonTheme.style?.copyWith(
+            backgroundColor: WidgetStateProperty.all(AppColors.lightPrimary),
+            foregroundColor: WidgetStateProperty.all(AppColors.white),
+            minimumSize: WidgetStateProperty.all(
+              const Size(double.infinity, 50),
+            ),
+            shape: WidgetStateProperty.all(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+          child: const Text('Go to Plan'),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Card shown to free users to upgrade to Pro
+Widget _buildUnlockPremiumCard(ThemeData theme, BuildContext context) {
+  return Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: AppColors.lightOrangeBackground,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Column(
+      children: [
+        Image.asset(
+          "images/icons/pro_crown.png",
+          width: 32,
+          height: 32,
+          color: AppColors.proColor,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Unlock Premium',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            color: AppColors.lightTextPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Get unlimited challenges, advanced analytics, and exclusive tools!',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.lightTextSecondary,
+            fontSize: 15,
+          ),
+        ),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: () {
+            PersistentNavBarNavigator.pushNewScreen(
+              context,
+              screen: const SuccessRateScreen(),
+              withNavBar: false,
+              pageTransitionAnimation: PageTransitionAnimation.cupertino,
+            );
+          },
+          style: theme.elevatedButtonTheme.style?.copyWith(
+            backgroundColor: WidgetStateProperty.all(AppColors.proColor),
+            foregroundColor: WidgetStateProperty.all(AppColors.white),
+            minimumSize: WidgetStateProperty.all(
+              const Size(double.infinity, 50),
+            ),
+          ),
+          child: const Text('Upgrade to Pro'),
+        ),
+      ],
+    ),
+  );
+}
+
+}
+
+/// Helper widget to navigate to plan - simple placeholder
+
 
 /// Helper widget for the Distraction Cards
 class _DistractionCard extends StatelessWidget {

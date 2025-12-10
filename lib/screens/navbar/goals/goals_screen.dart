@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:quit_habit/models/goal.dart';
 import 'package:quit_habit/models/user_goal.dart';
 import 'package:quit_habit/services/goal_service.dart';
+import 'package:quit_habit/services/plan_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:quit_habit/providers/auth_provider.dart';
 
@@ -61,6 +62,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   Widget _buildHeader(ThemeData theme) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,48 +90,80 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ),
           ],
         ),
-        GestureDetector(
-          onTap: () async {
-            try {
-              await _goalService.seedGoals();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Goals seeded successfully')),
-                );
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to seed goals: $e')),
-                );
-              }
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.proColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  FontAwesome.crown_solid,
-                  color: AppColors.white,
-                  size: 16,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Pro',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        Row(
+          children: [
+            // Dynamic Pro badge matching other navbar screens
+            if (user != null)
+              StreamBuilder<({bool isPro, bool hasStarted, DateTime? planStartedAt})>(
+                stream: PlanService.instance.getUserPlanStatusStream(user.uid),
+                builder: (context, snapshot) {
+                  final isPro = snapshot.data?.isPro ?? false;
+                  
+                  if (!isPro) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightSuccess,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          FontAwesome.crown_solid,
+                          color: AppColors.white,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Pro',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            // Seed button - keeping seeding logic accessible
+            // const SizedBox(width: 8),
+            // GestureDetector(
+            //   onTap: () async {
+            //     try {
+            //       await _goalService.seedGoals();
+            //       if (context.mounted) {
+            //         ScaffoldMessenger.of(context).showSnackBar(
+            //           const SnackBar(content: Text('Goals seeded successfully')),
+            //         );
+            //       }
+            //     } catch (e) {
+            //       if (context.mounted) {
+            //         ScaffoldMessenger.of(context).showSnackBar(
+            //           SnackBar(content: Text('Failed to seed goals: $e')),
+            //         );
+            //       }
+            //     }
+            //   },
+            //   child: Container(
+            //     padding: const EdgeInsets.all(8),
+            //     decoration: BoxDecoration(
+            //       color: AppColors.lightBackground,
+            //       borderRadius: BorderRadius.circular(12),
+            //       border: Border.all(color: AppColors.lightBorder),
+            //     ),
+            //     child: const Icon(
+            //       Icons.refresh,
+            //       size: 20,
+            //       color: AppColors.lightTextSecondary,
+            //     ),
+            //   ),
+            // ),
+          ],
         ),
       ],
     );

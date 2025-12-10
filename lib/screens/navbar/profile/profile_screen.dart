@@ -10,10 +10,12 @@ import 'package:quit_habit/screens/navbar/profile/my_data/my_data_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/notifications/notifications_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/invite_friends/invite_friends_screen.dart';
 import 'package:quit_habit/screens/navbar/profile/invite_friends/invites_list_screen.dart';
+import 'package:quit_habit/screens/navbar/profile/subscription_status/subscription_status_screen.dart';
 import 'package:quit_habit/screens/paywall/success_rate_screen.dart';
 import 'package:quit_habit/services/user_service.dart';
 import 'package:quit_habit/services/habit_service.dart';
 import 'package:quit_habit/services/goal_service.dart';
+import 'package:quit_habit/services/plan_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:quit_habit/widgets/auth_gate.dart';
 import 'package:intl/intl.dart';
@@ -43,7 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadUserData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    
+
     if (user == null) return;
 
     setState(() {
@@ -77,9 +79,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _getUserName() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    
+
     if (user == null) return 'User';
-    
+
     // Try Firestore displayName first (for email/password users)
     if (_userData != null && _userData!['displayName'] != null) {
       final displayName = _userData!['displayName'] as String;
@@ -87,28 +89,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return displayName;
       }
     }
-    
+
     // Fallback to Firebase Auth displayName (for Google users)
     if (user.displayName != null && user.displayName!.isNotEmpty) {
       return user.displayName!;
     }
-    
+
     // Fallback to email username
     if (user.email != null) {
       return user.email!.split('@')[0];
     }
-    
+
     return 'User';
   }
 
   String _getMemberSinceText() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    
+
     if (user == null || user.metadata.creationTime == null) {
       return 'Member since recently';
     }
-    
+
     final creationDate = user.metadata.creationTime!;
     final formatter = DateFormat('MMM yyyy');
     return 'Member since ${formatter.format(creationDate)}';
@@ -210,7 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         end: Alignment.bottomRight,
                         colors: [
                           Color(0xFF6366F1), // Indigo
-                          Color(0xFF8B5CF6) // Purple
+                          Color(0xFF8B5CF6), // Purple
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -227,16 +229,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                          color: AppColors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: AppColors.lightBackground, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                            )
-                          ]),
+                        color: AppColors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.lightBackground,
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
                       child: const Icon(
                         Icons.edit,
                         size: 12,
@@ -266,20 +271,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.lightBackground,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Free Account',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.lightTextSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    // Pro/Free account badge - dynamic based on isPro
+                    Builder(
+                      builder: (context) {
+                        final authProvider = Provider.of<AuthProvider>(context);
+                        final user = authProvider.user;
+
+                        if (user == null) {
+                          return _buildAccountBadge(theme, false);
+                        }
+
+                        return StreamBuilder<
+                          ({
+                            bool isPro,
+                            bool hasStarted,
+                            DateTime? planStartedAt,
+                          })
+                        >(
+                          stream: PlanService.instance.getUserPlanStatusStream(
+                            user.uid,
+                          ),
+                          builder: (context, snapshot) {
+                            final isPro = snapshot.data?.isPro ?? false;
+                            return _buildAccountBadge(theme, isPro);
+                          },
+                        );
+                      },
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -324,32 +341,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   final dataWithRelapses = snapshot.data;
                   final habitData = dataWithRelapses?.habitData;
                   final relapsePeriods = dataWithRelapses?.relapsePeriods ?? [];
-                  
-                  final currentStreak = habitData != null && habitData.hasStartDate
+
+                  final currentStreak =
+                      habitData != null && habitData.hasStartDate
                       ? habitService.getCurrentStreak(habitData, relapsePeriods)
                       : 0;
-                  final successRate = habitData != null && habitData.hasStartDate
+                  final successRate =
+                      habitData != null && habitData.hasStartDate
                       ? habitService.getSuccessRate(habitData, relapsePeriods)
                       : 0.0;
 
                   return StreamBuilder<List<UserGoal>>(
                     stream: GoalService().getUserCompletedGoals(user.uid),
                     builder: (context, goalsSnapshot) {
-                      final badgeCount = goalsSnapshot.data?.length ?? 0;
-                      
-                      return IntrinsicHeight(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildStatItem(theme, '$currentStreak', 'Day Streak'),
-                            const VerticalDivider(color: AppColors.lightBorder),
-                            _buildStatItem(theme, '$badgeCount', 'Badges'),
-                            const VerticalDivider(color: AppColors.lightBorder),
-                            _buildStatItem(theme, '${successRate.toStringAsFixed(1)}%', 'Success'),
-                          ],
+                      // Only count when data is available
+                      final challengeBadgeCount = goalsSnapshot.hasData
+                          ? goalsSnapshot.data!.length
+                          : 0;
+
+                      // Also get plan badges for total count
+                      return StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: PlanService.instance.getEarnedPlanBadgesStream(
+                          user.uid,
                         ),
+                        builder: (context, planBadgesSnapshot) {
+                          // Use plan badge count if available, otherwise 0
+                          final planBadgeCount = planBadgesSnapshot.hasData
+                              ? planBadgesSnapshot.data!.length
+                              : 0;
+                          final totalBadgeCount =
+                              challengeBadgeCount + planBadgeCount;
+
+                          return IntrinsicHeight(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildStatItem(
+                                  theme,
+                                  '$currentStreak',
+                                  'Day Streak',
+                                ),
+                                const VerticalDivider(
+                                  color: AppColors.lightBorder,
+                                ),
+                                _buildStatItem(
+                                  theme,
+                                  '$totalBadgeCount',
+                                  'Badges',
+                                ),
+                                const VerticalDivider(
+                                  color: AppColors.lightBorder,
+                                ),
+                                _buildStatItem(
+                                  theme,
+                                  '${successRate.toStringAsFixed(1)}%',
+                                  'Success',
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       );
-                    }
+                    },
                   );
                 },
               );
@@ -357,56 +410,169 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Upgrade Button
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () {
-                PersistentNavBarNavigator.pushNewScreen(
-                  context,
-                  screen: const SuccessRateScreen(),
-                  withNavBar: false,
-                  pageTransitionAnimation: PageTransitionAnimation.cupertino,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                padding: EdgeInsets.zero,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          // Upgrade/Pro Status Button - dynamic based on isPro
+          Builder(
+            builder: (context) {
+              final authProvider = Provider.of<AuthProvider>(context);
+              final user = authProvider.user;
+
+              if (user == null) {
+                return _buildUpgradeButton(theme, context, false);
+              }
+
+              return StreamBuilder<
+                ({bool isPro, bool hasStarted, DateTime? planStartedAt})
+              >(
+                stream: PlanService.instance.getUserPlanStatusStream(user.uid),
+                builder: (context, snapshot) {
+                  final isPro = snapshot.data?.isPro ?? false;
+                  return _buildUpgradeButton(theme, context, isPro);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the Free/Pro account badge
+  Widget _buildAccountBadge(ThemeData theme, bool isPro) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isPro
+            ? AppColors.lightSuccess.withOpacity(0.1)
+            : AppColors.lightBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: isPro
+            ? Border.all(color: AppColors.lightSuccess, width: 1)
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isPro)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Image.asset(
+                "images/icons/pro_crown.png",
+                width: 14,
+                height: 14,
               ),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF59E0B), Color(0xFFFF6900)], // Gold/Orange
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.workspace_premium_rounded,
-                          color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Upgrade to Pro',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            ),
+          Text(
+            isPro ? 'Pro Account' : 'Free Account',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: isPro
+                  ? AppColors.lightSuccess
+                  : AppColors.lightTextSecondary,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Builds the Upgrade/Pro Status button
+  Widget _buildUpgradeButton(
+    ThemeData theme,
+    BuildContext context,
+    bool isPro,
+  ) {
+    if (isPro) {
+      // Show Pro status button (green)
+      return SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: ElevatedButton(
+          onPressed: () {
+            // Navigate to subscription status
+            PersistentNavBarNavigator.pushNewScreen(
+              context,
+              screen: const SubscriptionStatusScreen(),
+              withNavBar: false,
+              pageTransitionAnimation: PageTransitionAnimation.cupertino,
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.lightSuccess,
+            foregroundColor: AppColors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset("images/icons/pro_crown.png", width: 20, height: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Pro Member',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show upgrade button (orange gradient) for free users
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton(
+        onPressed: () {
+          PersistentNavBarNavigator.pushNewScreen(
+            context,
+            screen: const SuccessRateScreen(),
+            withNavBar: false,
+            pageTransitionAnimation: PageTransitionAnimation.cupertino,
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          padding: EdgeInsets.zero,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFF59E0B), Color(0xFFFF6900)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.workspace_premium_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Upgrade to Pro',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -482,8 +648,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// Helper for a single quick action button
-  Widget _buildQuickActionItem(ThemeData theme, String label, IconData icon,
-      bool isActive, VoidCallback onTap) {
+  Widget _buildQuickActionItem(
+    ThemeData theme,
+    String label,
+    IconData icon,
+    bool isActive,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -513,8 +684,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
-                color:
-                    isActive ? AppColors.white : AppColors.lightTextSecondary,
+                color: isActive
+                    ? AppColors.white
+                    : AppColors.lightTextSecondary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                 fontSize: 12,
               ),
@@ -545,77 +717,150 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         final completedGoals = snapshot.data ?? [];
-        final earnedCount = completedGoals.length;
 
-        // We need to fetch all available goals to show unearned badges too, or just show earned ones.
-        // For a "Collection" feel, usually you show all slots.
-        // Let's fetch all available goals to map them.
-        return StreamBuilder<List<Goal>>(
-          stream: goalService.getAllGoals(),
-          builder: (context, goalsSnapshot) {
-            if (!goalsSnapshot.hasData) {
-              return const SizedBox.shrink();
-            }
+        // Also get plan badges
+        return StreamBuilder<List<Map<String, dynamic>>>(
+          stream: PlanService.instance.getEarnedPlanBadgesStream(user.uid),
+          builder: (context, planBadgesSnapshot) {
+            final planBadges = planBadgesSnapshot.data ?? [];
 
-            final allGoals = goalsSnapshot.data!;
-            
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Fetch all available goals for the grid
+            return StreamBuilder<List<Goal>>(
+              stream: goalService.getAllGoals(),
+              builder: (context, goalsSnapshot) {
+                if (!goalsSnapshot.hasData) {
+                  return const SizedBox.shrink();
+                }
+
+                final allGoals = goalsSnapshot.data!;
+
+                // Calculate total badges (challenge + plan)
+                final totalEarned = completedGoals.length + planBadges.length;
+                // Total possible: all goals + 4 plan phases
+                final totalPossible = allGoals.length + 4;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Your Badges',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 20,
+                            color: AppColors.lightTextPrimary,
+                          ),
+                        ),
+                        Text(
+                          '$totalEarned of $totalPossible earned',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppColors.lightTextSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Plan Phase Badges Section
+                    if (planBadges.isNotEmpty) ...[
+                      Text(
+                        '90-Day Plan Badges',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.lightTextSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 130,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: planBadges.length,
+                          itemBuilder: (context, index) {
+                            final badge = planBadges[index];
+                            final completedDate =
+                                badge['completedDate'] as DateTime?;
+                            final dateStr = completedDate != null
+                                ? DateFormat('MMM d').format(completedDate)
+                                : null;
+
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: SizedBox(
+                                width: 100,
+                                child: _buildBadgeItem(
+                                  theme,
+                                  badge['badgeName'] as String,
+                                  dateStr,
+                                  badge['badgeIcon'] as String?,
+                                  AppColors
+                                      .lightSuccess, // Green for plan badges
+                                  true,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Challenge Badges Section
                     Text(
-                      'Your Badges',
-                      style: theme.textTheme.headlineSmall?.copyWith(
+                      'Challenge Badges',
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 20,
-                        color: AppColors.lightTextPrimary,
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
-                    Text(
-                      '$earnedCount of ${allGoals.length} earned',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: AppColors.lightTextSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    const SizedBox(height: 8),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.85,
+                          ),
+                      itemCount: allGoals.length,
+                      itemBuilder: (context, index) {
+                        final goal = allGoals[index];
+                        // Check if user has completed this goal
+                        final isEarned = completedGoals.any(
+                          (ug) => ug.goalId == goal.id,
+                        );
+                        final completedGoal = isEarned
+                            ? completedGoals.firstWhere(
+                                (ug) => ug.goalId == goal.id,
+                              )
+                            : null;
+
+                        final dateStr = completedGoal?.completedDate != null
+                            ? DateFormat(
+                                'MMM d',
+                              ).format(completedGoal!.completedDate!)
+                            : null;
+
+                        return _buildBadgeItem(
+                          theme,
+                          isEarned ? completedGoal!.badgeName : goal.badgeName,
+                          dateStr,
+                          isEarned ? completedGoal!.badgeIcon : goal.badgeIcon,
+                          isEarned
+                              ? const Color(0xFFF59E0B)
+                              : AppColors.lightTextTertiary,
+                          isEarned,
+                        );
+                      },
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemCount: allGoals.length,
-                  itemBuilder: (context, index) {
-                    final goal = allGoals[index];
-                    // Check if user has completed this goal
-                    final isEarned = completedGoals.any((ug) => ug.goalId == goal.id);
-                    final completedGoal = isEarned 
-                        ? completedGoals.firstWhere((ug) => ug.goalId == goal.id) 
-                        : null;
-                    
-                    final dateStr = completedGoal?.completedDate != null
-                        ? DateFormat('MMM d').format(completedGoal!.completedDate!)
-                        : null;
-
-                    return _buildBadgeItem(
-                      theme,
-                      isEarned ? completedGoal!.badgeName : goal.badgeName,
-                      dateStr,
-                      isEarned ? completedGoal!.badgeIcon : goal.badgeIcon,
-                      isEarned ? const Color(0xFFF59E0B) : AppColors.lightTextTertiary,
-                      isEarned,
-                    );
-                  },
-                ),
-              ],
+                );
+              },
             );
           },
         );
@@ -623,8 +868,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildBadgeItem(ThemeData theme, String title, String? date,
-      String? iconPath, Color iconColor, bool isEarned) {
+  Widget _buildBadgeItem(
+    ThemeData theme,
+    String title,
+    String? date,
+    String? iconPath,
+    Color iconColor,
+    bool isEarned,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -639,7 +890,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: const Color(0xFFF59E0B).withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
-                )
+                ),
               ]
             : [],
       ),
@@ -720,12 +971,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisSpacing: 12,
                 childAspectRatio: 1.6,
                 children: [
-                  _buildStatGridItem(theme, '0', 'Total Days',
-                      Icons.calendar_today_rounded, const Color(0xFF22C55E)),
-                  _buildStatGridItem(theme, '0', 'Badges',
-                      Icons.emoji_events_rounded, const Color(0xFF8B5CF6)),
-                  _buildStatGridItem(theme, '0%', 'Success Rate',
-                      Icons.track_changes_rounded, const Color(0xFFEF4444)),
+                  _buildStatGridItem(
+                    theme,
+                    '0',
+                    'Total Days',
+                    Icons.calendar_today_rounded,
+                    const Color(0xFF22C55E),
+                  ),
+                  _buildStatGridItem(
+                    theme,
+                    '0%',
+                    'Success Rate',
+                    Icons.track_changes_rounded,
+                    const Color(0xFFEF4444),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -739,7 +998,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -754,7 +1016,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Builder(
                   builder: (context) {
                     final weekDays = <String>[];
-                    final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    final dayNames = [
+                      'Mon',
+                      'Tue',
+                      'Wed',
+                      'Thu',
+                      'Fri',
+                      'Sat',
+                      'Sun',
+                    ];
 
                     for (int i = 0; i < 7; i++) {
                       weekDays.add(dayNames[i]);
@@ -786,13 +1056,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             int totalDays = 0;
             if (habitData != null && habitData.hasStartDate) {
               final today = DateTime.now();
-              final todayNormalized = DateTime(today.year, today.month, today.day);
+              final todayNormalized = DateTime(
+                today.year,
+                today.month,
+                today.day,
+              );
               final startDateNormalized = DateTime(
                 habitData.startDate!.year,
                 habitData.startDate!.month,
                 habitData.startDate!.day,
               );
-              totalDays = todayNormalized.difference(startDateNormalized).inDays + 1;
+              totalDays =
+                  todayNormalized.difference(startDateNormalized).inDays + 1;
             }
 
             // Calculate success rate
@@ -828,12 +1103,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisSpacing: 12,
                       childAspectRatio: 1.6,
                       children: [
-                        _buildStatGridItem(theme, '$totalDays', 'Total Days',
-                            Icons.calendar_today_rounded, const Color(0xFF22C55E)),
-                        _buildStatGridItem(theme, '$completedGoalsCount', 'Badges',
-                            Icons.emoji_events_rounded, const Color(0xFF8B5CF6)),
-                        _buildStatGridItem(theme, '${successRate.toStringAsFixed(1)}%', 'Success Rate',
-                            Icons.track_changes_rounded, const Color(0xFFEF4444)),
+                        _buildStatGridItem(
+                          theme,
+                          '$totalDays',
+                          'Total Days',
+                          Icons.calendar_today_rounded,
+                          const Color(0xFF22C55E),
+                        ),
+
+                        _buildStatGridItem(
+                          theme,
+                          '${successRate.toStringAsFixed(1)}%',
+                          'Success Rate',
+                          Icons.track_changes_rounded,
+                          const Color(0xFFEF4444),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -848,7 +1132,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 20,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -862,19 +1149,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: Builder(
                         builder: (context) {
-                          final weekStatuses = habitData != null && habitData.hasStartDate
-                              ? habitService.getWeeklyProgress(habitData, relapsePeriods)
+                          final weekStatuses =
+                              habitData != null && habitData.hasStartDate
+                              ? habitService.getWeeklyProgress(
+                                  habitData,
+                                  relapsePeriods,
+                                )
                               : List<String>.filled(7, 'not_started');
 
                           // Get current week days (Monday to Sunday)
                           final today = DateTime.now();
-                          final weekday = today.weekday; // 1 = Monday, 7 = Sunday
+                          final weekday =
+                              today.weekday; // 1 = Monday, 7 = Sunday
                           final daysFromMonday = weekday - 1;
-                          final monday = DateTime(today.year, today.month, today.day)
-                              .subtract(Duration(days: daysFromMonday));
+                          final monday = DateTime(
+                            today.year,
+                            today.month,
+                            today.day,
+                          ).subtract(Duration(days: daysFromMonday));
 
                           final weekDays = <String>[];
-                          final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                          final dayNames = [
+                            'Mon',
+                            'Tue',
+                            'Wed',
+                            'Thu',
+                            'Fri',
+                            'Sat',
+                            'Sun',
+                          ];
 
                           for (int i = 0; i < 7; i++) {
                             weekDays.add(dayNames[i]);
@@ -886,10 +1189,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               final dayName = weekDays[index];
                               final status = weekStatuses[index];
                               final dayDate = monday.add(Duration(days: index));
-                              final todayNormalized =
-                                  DateTime(today.year, today.month, today.day);
-                              final dayNormalized =
-                                  DateTime(dayDate.year, dayDate.month, dayDate.day);
+                              final todayNormalized = DateTime(
+                                today.year,
+                                today.month,
+                                today.day,
+                              );
+                              final dayNormalized = DateTime(
+                                dayDate.year,
+                                dayDate.month,
+                                dayDate.day,
+                              );
                               final isToday = dayNormalized == todayNormalized;
 
                               // Map status to display status
@@ -906,7 +1215,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 displayStatus = 'future'; // Show empty circle
                               }
 
-                              return _WeekDay(day: dayName, status: displayStatus);
+                              return _WeekDay(
+                                day: dayName,
+                                status: displayStatus,
+                              );
                             }),
                           );
                         },
@@ -914,7 +1226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 );
-              }
+              },
             );
           },
         );
@@ -922,8 +1234,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatGridItem(ThemeData theme, String value, String label,
-      IconData icon, Color iconColor) {
+  Widget _buildStatGridItem(
+    ThemeData theme,
+    String value,
+    String label,
+    IconData icon,
+    Color iconColor,
+  ) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -954,8 +1271,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           Text(
             label,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: AppColors.lightTextSecondary, fontSize: 11),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.lightTextSecondary,
+              fontSize: 11,
+            ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
@@ -980,31 +1299,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 12),
         const ExpandableLearnTile(
           title: 'Why is smoking harmful?',
-          content: 'Smoking damages nearly every organ in your body. It causes lung cancer, heart disease, stroke, and lung diseases like COPD. It also increases the risk of tuberculosis, certain eye diseases, and problems with the immune system.',
+          content:
+              'Smoking damages nearly every organ in your body. It causes lung cancer, heart disease, stroke, and lung diseases like COPD. It also increases the risk of tuberculosis, certain eye diseases, and problems with the immune system.',
           icon: Icons.warning_amber_rounded,
           iconColor: Color(0xFFEF4444),
         ),
         const ExpandableLearnTile(
           title: 'Health benefits of quitting',
-          content: 'Within 20 minutes, your heart rate and blood pressure drop. In 12 hours, the carbon monoxide level in your blood drops to normal. In 2-12 weeks, your circulation improves and your lung function increases. In 1-9 months, coughing and shortness of breath decrease.',
+          content:
+              'Within 20 minutes, your heart rate and blood pressure drop. In 12 hours, the carbon monoxide level in your blood drops to normal. In 2-12 weeks, your circulation improves and your lung function increases. In 1-9 months, coughing and shortness of breath decrease.',
           icon: Icons.favorite_rounded,
           iconColor: Color(0xFFEC4899),
         ),
         const ExpandableLearnTile(
           title: 'Understanding nicotine addiction',
-          content: 'Nicotine is a highly addictive chemical found in the tobacco plant. It reaches the brain within seconds of inhaling cigarette smoke. It causes the release of dopamine, which gives a feeling of pleasure. Over time, your brain changes and you need more nicotine to feel okay.',
+          content:
+              'Nicotine is a highly addictive chemical found in the tobacco plant. It reaches the brain within seconds of inhaling cigarette smoke. It causes the release of dopamine, which gives a feeling of pleasure. Over time, your brain changes and you need more nicotine to feel okay.',
           icon: Icons.psychology_rounded,
           iconColor: Color(0xFF8B5CF6),
         ),
         const ExpandableLearnTile(
           title: 'Tips for handling cravings',
-          content: '1. Delay: Wait 10 minutes.\n2. Deep breathe.\n3. Drink water.\n4. Do something else to distract yourself.\n5. Discuss with a friend or support group.\nRemember, cravings usually last only a few minutes.',
+          content:
+              '1. Delay: Wait 10 minutes.\n2. Deep breathe.\n3. Drink water.\n4. Do something else to distract yourself.\n5. Discuss with a friend or support group.\nRemember, cravings usually last only a few minutes.',
           icon: Icons.lightbulb_rounded,
           iconColor: Color(0xFFF59E0B),
         ),
         const ExpandableLearnTile(
           title: 'Success stories',
-          content: 'Meet Sarah, who quit after 15 years of smoking. "It was hard at first, but taking it one day at a time helped. Now I can run a 5k without getting winded!" Join our community to read more inspiring stories.',
+          content:
+              'Meet Sarah, who quit after 15 years of smoking. "It was hard at first, but taking it one day at a time helped. Now I can run a 5k without getting winded!" Join our community to read more inspiring stories.',
           icon: Icons.auto_stories_rounded,
           iconColor: Color(0xFF22C55E),
         ),
@@ -1118,12 +1442,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const Color(0xFF9CA3AF), // Grey
           onTap: () async {
             final prefs = await SharedPreferences.getInstance();
-            final hasSeenOnboarding = prefs.getBool('hasSeenAIChatOnboarding') ?? false;
-            
+            final hasSeenOnboarding =
+                prefs.getBool('hasSeenAIChatOnboarding') ?? false;
+
             if (context.mounted) {
               PersistentNavBarNavigator.pushNewScreen(
                 context,
-                screen: hasSeenOnboarding ? const ChatScreen() : const ChatOnboardingScreen(),
+                screen: hasSeenOnboarding
+                    ? const ChatScreen()
+                    : const ChatOnboardingScreen(),
                 withNavBar: false,
                 pageTransitionAnimation: PageTransitionAnimation.cupertino,
               );
@@ -1144,9 +1471,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// Helper for a single setting tile
-  Widget _buildSettingTile(ThemeData theme, String title, String subtitle,
-      IconData icon, Color iconColor,
-      {VoidCallback? onTap}) {
+  Widget _buildSettingTile(
+    ThemeData theme,
+    String title,
+    String subtitle,
+    IconData icon,
+    Color iconColor, {
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1218,7 +1550,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: const BorderSide(
-                color: Color(0xFFFECACA)), // Slightly darker red border
+              color: Color(0xFFFECACA),
+            ), // Slightly darker red border
           ),
         ),
         child: _isSigningOut
@@ -1271,14 +1604,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final shouldSignOut = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Sign Out',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         content: Text(
           'Are you sure you want to sign out?',
@@ -1304,9 +1635,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Text(
                     'Cancel',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.lightTextSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: AppColors.lightTextSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -1340,10 +1671,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
 
       try {
-        final authProvider =
-            Provider.of<AuthProvider>(context, listen: false);
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
         await authProvider.signOut();
-        
+
         // Clear navigation stack and return to root (AuthGate will handle routing to LoginScreen)
         // Use root navigator to bypass PersistentTabView's navigation context
         if (mounted) {
@@ -1360,7 +1690,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  'Failed to sign out: ${e.toString().replaceFirst('Exception: ', '')}'),
+                'Failed to sign out: ${e.toString().replaceFirst('Exception: ', '')}',
+              ),
               backgroundColor: AppColors.lightError,
               behavior: SnackBarBehavior.floating,
             ),
@@ -1460,7 +1791,7 @@ class _ExpandableLearnTileState extends State<ExpandableLearnTile> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -1503,7 +1834,9 @@ class _ExpandableLearnTileState extends State<ExpandableLearnTile> {
                 )
               : null,
           trailing: Icon(
-            _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+            _isExpanded
+                ? Icons.keyboard_arrow_up_rounded
+                : Icons.keyboard_arrow_down_rounded,
             size: 24,
             color: AppColors.lightTextTertiary.withOpacity(0.5),
           ),

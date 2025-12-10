@@ -1,8 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:quit_habit/providers/auth_provider.dart';
+import 'package:quit_habit/services/plan_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 
-class SubscriptionStatusScreen extends StatelessWidget {
+class SubscriptionStatusScreen extends StatefulWidget {
   const SubscriptionStatusScreen({super.key});
+
+  @override
+  State<SubscriptionStatusScreen> createState() => _SubscriptionStatusScreenState();
+}
+
+class _SubscriptionStatusScreenState extends State<SubscriptionStatusScreen> {
+  bool _isCancelling = false;
+
+  Future<void> _cancelSubscription() async {
+    if (_isCancelling) return;
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Cancel Subscription?'),
+        content: const Text(
+          'Are you sure you want to cancel your Pro subscription? You will lose access to:\n\n• 90-Day Quit Plan\n• Unlimited Challenges\n• Advanced Analytics\n• Expert Support',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep Pro'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.lightError,
+            ),
+            child: const Text('Cancel Subscription'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isCancelling = true);
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.user?.uid;
+
+      if (userId == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Remove Pro status
+      await PlanService.instance.cancelSubscription(userId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Subscription cancelled. You\'ve been downgraded to a free account.'),
+            backgroundColor: AppColors.lightSuccess,
+          ),
+        );
+        // Pop back to profile screen
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to cancel subscription: $e'),
+            backgroundColor: AppColors.lightError,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCancelling = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,23 +245,30 @@ class SubscriptionStatusScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 52,
                 child: TextButton(
-                  onPressed: () {
-                    // TODO: Handle cancel subscription
-                  },
+                  onPressed: _isCancelling ? null : _cancelSubscription,
                   style: TextButton.styleFrom(
                     backgroundColor: AppColors.lightError.withOpacity(0.05),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: Text(
-                    'Cancel Subscription',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.lightError,
-                    ),
-                  ),
+                  child: _isCancelling
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.lightError),
+                          ),
+                        )
+                      : Text(
+                          'Cancel Subscription',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.lightError,
+                          ),
+                        ),
                 ),
               ),
             ],

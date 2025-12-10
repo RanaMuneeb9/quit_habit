@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/goal.dart';
 import '../models/user_goal.dart';
 
@@ -53,7 +54,14 @@ class GoalService {
 
     goalsSub = _goalsCollection.snapshots().listen(
       (snapshot) {
-        globalGoals = snapshot.docs.map((doc) => Goal.fromFirestore(doc)).toList();
+        globalGoals = [];
+        for (final doc in snapshot.docs) {
+          try {
+            globalGoals.add(Goal.fromFirestore(doc));
+          } catch (e) {
+            debugPrint('GoalService: Failed to parse Goal ${doc.id}: $e');
+          }
+        }
         globalLoaded = true;
         if (globalLoaded && userLoaded) emitFilteredGoals();
       },
@@ -62,7 +70,14 @@ class GoalService {
 
     userGoalsSub = _getUserGoalsCollection(userId).snapshots().listen(
       (snapshot) {
-        userGoals = snapshot.docs.map((doc) => UserGoal.fromFirestore(doc)).toList();
+        userGoals = [];
+        for (final doc in snapshot.docs) {
+          try {
+            userGoals.add(UserGoal.fromFirestore(doc));
+          } catch (e) {
+            debugPrint('GoalService: Failed to parse UserGoal ${doc.id}: $e');
+          }
+        }
         userLoaded = true;
         if (globalLoaded && userLoaded) emitFilteredGoals();
       },
@@ -81,7 +96,15 @@ class GoalService {
   // Fetch All Goals (Unfiltered)
   Stream<List<Goal>> getAllGoals() {
     return _goalsCollection.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Goal.fromFirestore(doc)).toList();
+      final goals = <Goal>[];
+      for (final doc in snapshot.docs) {
+        try {
+          goals.add(Goal.fromFirestore(doc));
+        } catch (e) {
+          debugPrint('GoalService: Failed to parse Goal ${doc.id}: $e');
+        }
+      }
+      return goals;
     });
   }
 
@@ -91,7 +114,15 @@ class GoalService {
         .where('status', isEqualTo: 'active')
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => UserGoal.fromFirestore(doc)).toList();
+      final userGoals = <UserGoal>[];
+      for (final doc in snapshot.docs) {
+        try {
+          userGoals.add(UserGoal.fromFirestore(doc));
+        } catch (e) {
+          debugPrint('GoalService: Failed to parse UserGoal ${doc.id}: $e');
+        }
+      }
+      return userGoals;
     });
   }
 
@@ -101,7 +132,15 @@ class GoalService {
         .where('status', isEqualTo: 'completed')
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => UserGoal.fromFirestore(doc)).toList();
+      final userGoals = <UserGoal>[];
+      for (final doc in snapshot.docs) {
+        try {
+          userGoals.add(UserGoal.fromFirestore(doc));
+        } catch (e) {
+          debugPrint('GoalService: Failed to parse UserGoal ${doc.id}: $e');
+        }
+      }
+      return userGoals;
     });
   }
 
@@ -347,23 +386,31 @@ class GoalService {
         .get();
 
     for (var doc in activeGoalsQuery.docs) {
-      final userGoal = UserGoal.fromFirestore(doc);
-      
-      if (userGoal.type == 'functionality' || userGoal.type == 'GoalType.functionality') { 
-        final goalDoc = await _goalsCollection.doc(userGoal.goalId).get();
-        if (!goalDoc.exists) continue;
-        final goal = Goal.fromFirestore(goalDoc);
+      try {
+        final userGoal = UserGoal.fromFirestore(doc);
+        
+        if (userGoal.type == 'functionality' || userGoal.type == 'GoalType.functionality') { 
+          final goalDoc = await _goalsCollection.doc(userGoal.goalId).get();
+          if (!goalDoc.exists) continue;
+          try {
+            final goal = Goal.fromFirestore(goalDoc);
 
-        final minMinutes = (goal.metadata['minDailyMinutes'] as num?)?.toInt() ?? 10;
+            final minMinutes = (goal.metadata['minDailyMinutes'] as num?)?.toInt() ?? 10;
 
-        if (dailyUsageMinutes >= minMinutes) {
-             await updateGoalProgress(
-               userId, 
-               userGoal.id, 
-               1, // Increment by 1
-               checkDailyLimit: true
-             );
+            if (dailyUsageMinutes >= minMinutes) {
+                 await updateGoalProgress(
+                   userId, 
+                   userGoal.id, 
+                   1, // Increment by 1
+                   checkDailyLimit: true
+                 );
+            }
+          } catch (e) {
+            debugPrint('GoalService: Failed to parse Goal ${goalDoc.id}: $e');
+          }
         }
+      } catch (e) {
+        debugPrint('GoalService: Failed to parse UserGoal ${doc.id}: $e');
       }
     }
   }
@@ -395,16 +442,24 @@ class GoalService {
         .get();
 
     for (var doc in activeGoalsQuery.docs) {
-      final userGoal = UserGoal.fromFirestore(doc);
-      if (userGoal.type == 'milestone') {
-         final goalDoc = await _goalsCollection.doc(userGoal.goalId).get();
-         if (!goalDoc.exists) continue;
-         final goal = Goal.fromFirestore(goalDoc);
-         
-         final requiredMilestone = goal.metadata['milestoneId'] as String?;
-         if (requiredMilestone == milestoneId || (goal.title.contains('Pro') && milestoneId == 'pro_status')) {
-           await updateGoalProgress(userId, userGoal.id, 1); 
-         }
+      try {
+        final userGoal = UserGoal.fromFirestore(doc);
+        if (userGoal.type == 'milestone') {
+           final goalDoc = await _goalsCollection.doc(userGoal.goalId).get();
+           if (!goalDoc.exists) continue;
+           try {
+             final goal = Goal.fromFirestore(goalDoc);
+             
+             final requiredMilestone = goal.metadata['milestoneId'] as String?;
+             if (requiredMilestone == milestoneId || (goal.title.contains('Pro') && milestoneId == 'pro_status')) {
+               await updateGoalProgress(userId, userGoal.id, 1); 
+             }
+           } catch (e) {
+             debugPrint('GoalService: Failed to parse Goal ${goalDoc.id}: $e');
+           }
+        }
+      } catch (e) {
+        debugPrint('GoalService: Failed to parse UserGoal ${doc.id}: $e');
       }
     }
   }
@@ -421,28 +476,36 @@ class GoalService {
         .get();
 
     for (var doc in activeGoalsQuery.docs) {
-      final userGoal = UserGoal.fromFirestore(doc);
-      // Check type string match
-      if (userGoal.type == type.toString().split('.').last) {
-        
-        // Check metadata for daily limit override
-        bool shouldCheckDaily = checkDailyLimit;
-        
-        // We need to fetch the goal to check metadata
-        final goalDoc = await _goalsCollection.doc(userGoal.goalId).get();
-        if (goalDoc.exists) {
-          final goal = Goal.fromFirestore(goalDoc);
-          if (goal.metadata['dailyLimit'] == true) {
-            shouldCheckDaily = true;
+      try {
+        final userGoal = UserGoal.fromFirestore(doc);
+        // Check type string match
+        if (userGoal.type == type.toString().split('.').last) {
+          
+          // Check metadata for daily limit override
+          bool shouldCheckDaily = checkDailyLimit;
+          
+          // We need to fetch the goal to check metadata
+          final goalDoc = await _goalsCollection.doc(userGoal.goalId).get();
+          if (goalDoc.exists) {
+            try {
+              final goal = Goal.fromFirestore(goalDoc);
+              if (goal.metadata['dailyLimit'] == true) {
+                shouldCheckDaily = true;
+              }
+            } catch (e) {
+              debugPrint('GoalService: Failed to parse Goal ${goalDoc.id}: $e');
+            }
           }
-        }
 
-        await updateGoalProgress(
-          userId, 
-          userGoal.id, 
-          amount, 
-          checkDailyLimit: shouldCheckDaily
-        );
+          await updateGoalProgress(
+            userId, 
+            userGoal.id, 
+            amount, 
+            checkDailyLimit: shouldCheckDaily
+          );
+        }
+      } catch (e) {
+        debugPrint('GoalService: Failed to parse UserGoal ${doc.id}: $e');
       }
     }
   }
@@ -454,34 +517,42 @@ class GoalService {
         .get();
 
     for (var doc in activeGoalsQuery.docs) {
-      final userGoal = UserGoal.fromFirestore(doc);
-      if (userGoal.type == 'duration') {
-         // Use transaction for safety
-         await _firestore.runTransaction((transaction) async {
-           final freshSnapshot = await transaction.get(doc.reference);
-           if (!freshSnapshot.exists) return;
-           
-           final freshUserGoal = UserGoal.fromFirestore(freshSnapshot);
-           if (freshUserGoal.status != UserGoalStatus.active) return;
+      try {
+        final userGoal = UserGoal.fromFirestore(doc);
+        if (userGoal.type == 'duration') {
+           // Use transaction for safety
+           await _firestore.runTransaction((transaction) async {
+             final freshSnapshot = await transaction.get(doc.reference);
+             if (!freshSnapshot.exists) return;
+             
+             try {
+               final freshUserGoal = UserGoal.fromFirestore(freshSnapshot);
+               if (freshUserGoal.status != UserGoalStatus.active) return;
 
-           if (freshUserGoal.progress != currentStreak) {
-             final Map<String, dynamic> updates = {
-               'progress': currentStreak,
-               'lastUpdateDate': FieldValue.serverTimestamp(),
-               'lastServerTimestamp': FieldValue.serverTimestamp(),
-             };
-             
-             // Check completion
-             if (currentStreak >= freshUserGoal.goalTargetValue) {
-               updates.addAll({
-                 'status': UserGoalStatus.completed.name,
-                 'completedDate': FieldValue.serverTimestamp(),
-               });
+               if (freshUserGoal.progress != currentStreak) {
+                 final Map<String, dynamic> updates = {
+                   'progress': currentStreak,
+                   'lastUpdateDate': FieldValue.serverTimestamp(),
+                   'lastServerTimestamp': FieldValue.serverTimestamp(),
+                 };
+                 
+                 // Check completion
+                 if (currentStreak >= freshUserGoal.goalTargetValue) {
+                   updates.addAll({
+                     'status': UserGoalStatus.completed.name,
+                     'completedDate': FieldValue.serverTimestamp(),
+                   });
+                 }
+                 
+                 transaction.update(doc.reference, updates);
+               }
+             } catch (e) {
+               debugPrint('GoalService: Failed to parse fresh UserGoal ${freshSnapshot.id}: $e');
              }
-             
-             transaction.update(doc.reference, updates);
-           }
-         });
+           });
+        }
+      } catch (e) {
+        debugPrint('GoalService: Failed to parse UserGoal ${doc.id}: $e');
       }
     }
   }

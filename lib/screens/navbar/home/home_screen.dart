@@ -18,6 +18,7 @@ import 'package:quit_habit/screens/navbar/tools/jumping_jacks/jumping_jacks_scre
 import 'package:quit_habit/screens/navbar/tools/meditation/meditation_screen.dart';
 import 'package:quit_habit/screens/paywall/success_rate_screen.dart';
 import 'package:quit_habit/utils/app_colors.dart';
+import 'package:quit_habit/utils/tool_usage_tracker.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -383,6 +384,7 @@ class HomeScreen extends StatelessWidget {
                 bgColor: AppColors.lightRed.withOpacity(0.1),
                 iconBgColor: AppColors.lightRed,
                 onTap: () {
+                  ToolUsageTracker.trackUsage('Breathing');
                   PersistentNavBarNavigator.pushNewScreen(
                     context,
                     screen: const BreathingScreen(),
@@ -401,6 +403,7 @@ class HomeScreen extends StatelessWidget {
                 bgColor: AppColors.lightBlueDistraction, // Corrected Color
                 iconBgColor: AppColors.lightPrimary,
                 onTap: () {
+                  ToolUsageTracker.trackUsage('Physical Workout');
                   PersistentNavBarNavigator.pushNewScreen(
                     context,
                     screen: const JumpingJacksScreen(),
@@ -419,6 +422,7 @@ class HomeScreen extends StatelessWidget {
                 bgColor: AppColors.lightGreenBackground, // Corrected Color
                 iconBgColor: AppColors.lightSuccess,
                 onTap: () {
+                  ToolUsageTracker.trackUsage('Meditation');
                   PersistentNavBarNavigator.pushNewScreen(
                     context,
                     screen: const MeditationScreen(),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quit_habit/utils/tool_usage_tracker.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:quit_habit/screens/navbar/tools/breathing/breathing_screen.dart';
 import 'package:quit_habit/screens/navbar/tools/inspiration/inspiration_quotes_screen.dart';
@@ -28,6 +29,59 @@ class ToolsScreen extends StatefulWidget {
 }
 
 class _ToolsScreenState extends State<ToolsScreen> {
+  String _mostUsedTool = 'Breathing';
+  int _mostUsedCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsage();
+  }
+
+  Future<void> _loadUsage() async {
+    final result = await ToolUsageTracker.getMostUsedTool();
+    if (mounted) {
+      setState(() {
+        _mostUsedTool = result['name'] ?? 'Breathing';
+        _mostUsedCount = result['count'] ?? 0;
+      });
+    }
+  }
+
+  Future<void> _trackUsage(String toolName) async {
+    await ToolUsageTracker.trackUsage(toolName);
+    _loadUsage();
+  }
+
+  void _handleToolTap(BuildContext context, Widget screen, String toolName) {
+    _trackUsage(toolName);
+    PersistentNavBarNavigator.pushNewScreen(
+      context,
+      screen: screen,
+      withNavBar: false,
+      pageTransitionAnimation: PageTransitionAnimation.sizeUp,
+    );
+  }
+
+  Map<String, dynamic> _getToolData(String name) {
+    switch (name) {
+      case 'Breathing':
+        return {'color': _kBreathingColor, 'icon': Icons.air};
+      case 'Physical Workout':
+        return {'color': _kWorkoutColor, 'icon': Icons.fitness_center_outlined};
+      case 'Meditation':
+        return {'color': _kMeditationColor, 'icon': Icons.self_improvement};
+      case 'Inspiration':
+        return {'color': _kInspirationColor, 'icon': Icons.star_outline_rounded};
+      case 'Resources':
+        return {'color': const Color(0xFF43A047), 'icon': Icons.menu_book_rounded};
+      case 'Mood Check-in':
+        return {'color': const Color(0xFFFF9800), 'icon': Icons.mood_rounded};
+      default:
+        return {'color': _kBreathingColor, 'icon': Icons.air};
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -56,58 +110,70 @@ class _ToolsScreenState extends State<ToolsScreen> {
   }
 
   /// Builds the top "Cravings Defeated" card
+  /// Builds the top "Most Used Exercise" card
   Widget _buildHeader(ThemeData theme) {
+    final toolData = _getToolData(_mostUsedTool);
+    final toolColor = toolData['color'] as Color;
+    final toolIcon = toolData['icon'] as IconData;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.lightBorder, width: 1.5),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left Side
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Cravings Defeated Today',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.lightTextSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '12', // Hardcoded from design
-                style: theme.textTheme.displayLarge?.copyWith(
-                  color: AppColors.lightTextPrimary,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          // Right Side
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Most Used Exercise',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: AppColors.lightTextSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Most Used',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.lightTextSecondary,
-                  fontWeight: FontWeight.w500,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: toolColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  toolIcon,
+                  color: toolColor,
+                  size: 32,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Breathing', // Hardcoded from design
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: _kBreathingColor,
-                  fontWeight: FontWeight.w600,
-                ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _mostUsedTool,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: AppColors.lightTextPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    '$_mostUsedCount sessions completed',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.lightTextSecondary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -133,14 +199,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           subtitle: 'Calm cravings',
           iconColor: _kBreathingColor,
           backgroundColor: _kBreathingBg,
-          onTap: () {
-            PersistentNavBarNavigator.pushNewScreen(
-              context,
-              screen: const BreathingScreen(),
-              withNavBar: false,
-              pageTransitionAnimation: PageTransitionAnimation.sizeUp,
-            );
-          },
+          onTap: () => _handleToolTap(
+              context, const BreathingScreen(), 'Breathing'),
         ),
         _ToolCard(
           width: cardWidth,
@@ -149,14 +209,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           subtitle: 'Quick workouts',
           iconColor: _kWorkoutColor,
           backgroundColor: _kWorkoutBg,
-          onTap: () {
-            PersistentNavBarNavigator.pushNewScreen(
-              context,
-              screen: const JumpingJacksScreen(),
-              withNavBar: false,
-              pageTransitionAnimation: PageTransitionAnimation.sizeUp,
-            );
-          },
+          onTap: () => _handleToolTap(
+              context, const JumpingJacksScreen(), 'Physical Workout'),
         ),
         _ToolCard(
           width: cardWidth,
@@ -165,14 +219,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           subtitle: 'Find peace',
           iconColor: _kMeditationColor,
           backgroundColor: _kMeditationBg,
-          onTap: () {
-            PersistentNavBarNavigator.pushNewScreen(
-              context,
-              screen: const MeditationScreen(),
-              withNavBar: false,
-              pageTransitionAnimation: PageTransitionAnimation.sizeUp,
-            );
-          },
+          onTap: () => _handleToolTap(
+              context, const MeditationScreen(), 'Meditation'),
         ),
         // --- NEW CARD ADDED ---
         // _ToolCard(
@@ -199,14 +247,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           subtitle: 'Daily quotes',
           iconColor: _kInspirationColor,
           backgroundColor: _kInspirationBg,
-          onTap: () {
-            PersistentNavBarNavigator.pushNewScreen(
-              context,
-              screen: const InspirationQuotesScreen(),
-              withNavBar: false,
-              pageTransitionAnimation: PageTransitionAnimation.sizeUp,
-            );
-          },
+          onTap: () => _handleToolTap(
+              context, const InspirationQuotesScreen(), 'Inspiration'),
         ),
         _ToolCard(
           width: cardWidth,
@@ -215,14 +257,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           subtitle: 'Learn & Grow',
           iconColor: const Color(0xFF43A047), // Green
           backgroundColor: const Color(0xFFE8F5E9),
-          onTap: () {
-            PersistentNavBarNavigator.pushNewScreen(
-              context,
-              screen: const ResourcesScreen(),
-              withNavBar: false,
-              pageTransitionAnimation: PageTransitionAnimation.sizeUp,
-            );
-          },
+          onTap: () => _handleToolTap(
+              context, const ResourcesScreen(), 'Resources'),
         ),
         _ToolCard(
           width: cardWidth,
@@ -231,14 +267,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
           subtitle: 'Track feelings',
           iconColor: const Color(0xFFFF9800), // Orange
           backgroundColor: const Color(0xFFFFF3E0),
-          onTap: () {
-            PersistentNavBarNavigator.pushNewScreen(
-              context,
-              screen: const MoodScreen(),
-              withNavBar: false,
-              pageTransitionAnimation: PageTransitionAnimation.sizeUp,
-            );
-          },
+          onTap: () =>
+              _handleToolTap(context, const MoodScreen(), 'Mood Check-in'),
         ),
       ],
     );

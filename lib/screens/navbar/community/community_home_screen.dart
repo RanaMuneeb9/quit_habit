@@ -267,6 +267,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _CommunityPostCard(
+                          key: ValueKey(post.id),
                           post: postWithLikeStatus,
                           theme: theme,
                           onLikeToggled: () => _handleLikeToggle(post.id),
@@ -290,6 +291,7 @@ class _CommunityPostCard extends StatefulWidget {
   final VoidCallback onLikeToggled;
 
   const _CommunityPostCard({
+    super.key,
     required this.post,
     required this.theme,
     required this.onLikeToggled,

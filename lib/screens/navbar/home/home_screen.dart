@@ -237,14 +237,66 @@ class HomeScreen extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(1),
-                          color: Colors.transparent,
-                          child: Image.asset(
-                            "images/icons/home_trophy.png",
-                            width: 31,
-                            height: 31,
-                          ),
+                        StreamBuilder<List<UserGoal>>(
+                          stream: GoalService().getUserCompletedGoals(user.uid),
+                          builder: (context, goalSnapshot) {
+                            return StreamBuilder<List<Map<String, dynamic>>>(
+                              stream: PlanService.instance.getEarnedPlanBadgesStream(user.uid),
+                              builder: (context, planSnapshot) {
+                                final goalBadges = goalSnapshot.data ?? [];
+                                final planBadges = planSnapshot.data ?? [];
+                                
+                                Map<String, dynamic>? latestBadge;
+                                DateTime? latestDate;
+
+                                // Check goal badges
+                                for (var badge in goalBadges) {
+                                  if (badge.completedDate != null) {
+                                    if (latestDate == null || badge.completedDate!.isAfter(latestDate)) {
+                                      latestDate = badge.completedDate;
+                                      latestBadge = {
+                                        'icon': badge.badgeIcon,
+                                        'name': badge.badgeName,
+                                      };
+                                    }
+                                  }
+                                }
+
+                                // Check plan badges
+                                for (var badge in planBadges) {
+                                  final date = badge['completedDate'] as DateTime?;
+                                  if (date != null) {
+                                    if (latestDate == null || date.isAfter(latestDate)) {
+                                      latestDate = date;
+                                      latestBadge = {
+                                        'icon': badge['badgeIcon'],
+                                        'name': badge['badgeName'],
+                                      };
+                                    }
+                                  }
+                                }
+
+                                if (latestBadge == null) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.lightPrimary.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Image.asset(
+                                    latestBadge['icon'],
+                                    width: 31,
+                                    height: 31,
+                                    errorBuilder: (context, error, stackTrace) => 
+                                        const SizedBox.shrink(),
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ],
                     ),

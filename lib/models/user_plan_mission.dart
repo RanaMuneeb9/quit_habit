@@ -71,7 +71,11 @@ class UserPlanMission {
   final DateTime? startedAt;
   
   /// When the user completed this mission
+  /// When the user completed this mission
   final DateTime? completedAt;
+
+  /// When this mission will unlock
+  final DateTime? unlocksAt;
 
   UserPlanMission({
     required this.id,
@@ -91,6 +95,7 @@ class UserPlanMission {
     this.contractSignature,
     this.startedAt,
     this.completedAt,
+    this.unlocksAt,
   });
 
   /// Create from a PlanMission template (for initial unlock)
@@ -114,6 +119,7 @@ class UserPlanMission {
       status: initialStatus,
       taskCompletions: {},
       reflectionAnswers: {},
+      unlocksAt: null,
     );
   }
 
@@ -207,6 +213,7 @@ class UserPlanMission {
       contractSignature: data['contractSignature'] as String?,
       startedAt: parseDate(data['startedAt']),
       completedAt: parseDate(data['completedAt']),
+      unlocksAt: parseDate(data['unlocksAt']),
     );
   }
 
@@ -241,6 +248,7 @@ class UserPlanMission {
       if (contractSignature != null) 'contractSignature': contractSignature,
       if (startedAt != null) 'startedAt': Timestamp.fromDate(startedAt!),
       if (completedAt != null) 'completedAt': Timestamp.fromDate(completedAt!),
+      if (unlocksAt != null) 'unlocksAt': Timestamp.fromDate(unlocksAt!),
     };
   }
 
@@ -307,6 +315,7 @@ class UserPlanMission {
     String? contractSignature,
     DateTime? startedAt,
     DateTime? completedAt,
+    DateTime? unlocksAt,
   }) {
     return UserPlanMission(
       id: id ?? this.id,
@@ -326,6 +335,7 @@ class UserPlanMission {
       contractSignature: contractSignature ?? this.contractSignature,
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
+      unlocksAt: unlocksAt ?? this.unlocksAt,
     );
   }
 

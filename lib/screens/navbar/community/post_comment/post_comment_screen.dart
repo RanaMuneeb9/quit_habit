@@ -12,6 +12,9 @@ import 'package:quit_habit/services/community_service.dart';
 import 'package:quit_habit/services/invite_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:quit_habit/widgets/user_profile_popup.dart';
+import 'package:quit_habit/services/goal_service.dart';
+import 'package:quit_habit/services/plan_service.dart';
+import 'package:quit_habit/models/user_goal.dart';
 
 class PostCommentScreen extends StatefulWidget {
   final CommunityPost post;
@@ -180,14 +183,16 @@ class _PostCommentScreenState extends State<PostCommentScreen> {
           if (comments.isEmpty) {
             _hasMore = false;
           } else {
-            // Insert after the last paged comment
-            final index = _comments.indexOf(_lastPagedComment!);
+            // Insert after the last paged comment (by ID)
+            final index = _comments.indexWhere((c) => c.id == _lastPagedComment!.id);
             if (index != -1) {
-              _comments.insertAll(index + 1, comments);
+              // Filter out any duplicates that may have arrived via stream
+              final uniqueComments = comments.where((c) => !_comments.any((existing) => existing.id == c.id)).toList();
+              _comments.insertAll(index + 1, uniqueComments);
             } else {
-              _comments.addAll(comments);
-            }
-            
+              final uniqueComments = comments.where((c) => !_comments.any((existing) => existing.id == c.id)).toList();
+              _comments.addAll(uniqueComments);
+            }            
             _lastPagedComment = comments.last;
             if (comments.length < 20) _hasMore = false;
           }
@@ -499,6 +504,54 @@ class _PostCommentScreenState extends State<PostCommentScreen> {
                 ),
               ),
               const Spacer(),
+              if (_postUserInfo != null && _postUserInfo!['latestBadge'] != null) ...[
+                GestureDetector(
+                  onTap: () => _showUserBadges(context, widget.post.userId, userName),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightPrimary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Image.asset(
+                      _postUserInfo!['latestBadge']['badgeIcon'],
+                      width: 20,
+                      height: 20,
+                      errorBuilder: (c, e, s) => const Icon(Icons.star, size: 20, color: AppColors.lightPrimary),
+                    ),
+                  ),
+                ),
+              ],
+              if (widget.post.streakDays > 0)
+                Container(
+                  margin: authProvider.user?.uid == widget.post.userId ? const EdgeInsets.only(right: 8) : EdgeInsets.zero,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.badgeOrange,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.local_fire_department_rounded,
+                        color: AppColors.lightWarning,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.post.streakDays.toString(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppColors.lightWarning,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               // Delete Post Option (if owner)
               if (authProvider.user?.uid == widget.post.userId)
                 PopupMenuButton<String>(
@@ -551,34 +604,6 @@ class _PostCommentScreenState extends State<PostCommentScreen> {
                       ),
                     ),
                   ],
-                ),
-              if (widget.post.streakDays > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.badgeOrange,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.local_fire_department_rounded,
-                        color: AppColors.lightWarning,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        widget.post.streakDays.toString(),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.lightWarning,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
             ],
           ),
@@ -711,6 +736,158 @@ class _PostCommentScreenState extends State<PostCommentScreen> {
   
   int min(int a, int b) {
     return a < b ? a : b;
+  }
+  
+  void _showUserBadges(BuildContext context, String userId, String userName) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            final theme = Theme.of(context);
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.lightBorder,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    "$userName's Badges",
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.lightTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                child: StreamBuilder<List<UserGoal>>(
+                  stream: GoalService().getUserCompletedGoals(userId),
+                  builder: (context, snapshot) {
+                      return StreamBuilder<List<Map<String, dynamic>>>(
+                          stream: PlanService.instance.getEarnedPlanBadgesStream(userId),
+                          builder: (context, planSnapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting && 
+                                planSnapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            
+                            final goalBadges = snapshot.data ?? [];
+                            final planBadges = planSnapshot.data ?? [];
+                            
+                            // Normalize plan badges to match structure
+                            final normalizedPlanBadges = planBadges.map((pb) => {
+                              'badgeName': pb['badgeName'],
+                              'badgeIcon': pb['badgeIcon'],
+                              'completedDate': pb['completedDate'],
+                            }).toList();
+                            
+                            // Combine
+                            final allBadges = [
+                              ...goalBadges.map((g) => {
+                                'badgeName': g.badgeName,
+                                'badgeIcon': g.badgeIcon,
+                              }), 
+                              ...normalizedPlanBadges
+                            ];
+
+                            if (allBadges.isEmpty) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'images/icons/home_trophy.png',
+                                      width: 64,
+                                      height: 64,
+                                      color: AppColors.lightTextSecondary.withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No badges yet',
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        color: AppColors.lightTextSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return GridView.builder(
+                              controller: scrollController,
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.8,
+                              ),
+                              itemCount: allBadges.length,
+                              itemBuilder: (context, index) {
+                                final badge = allBadges[index];
+                                return Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.lightPrimary.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Image.asset(
+                                        badge['badgeIcon'],
+                                        width: 40,
+                                        height: 40,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(Icons.emoji_events, size: 40, color: AppColors.lightPrimary);
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      badge['badgeName'],
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          }
+                      );
+                  },
+                ),
+              ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showFilterBottomSheet() {
@@ -935,16 +1112,22 @@ class _CommentCardState extends State<_CommentCard> {
   void _fetchReplies() {
     setState(() => _isLoadingReplies = true);
     _repliesSubscription?.cancel();
-    _repliesSubscription = _communityService.getRepliesStream(widget.postId, widget.comment.id).listen((replies) {
-      if (mounted) {
-        setState(() {
-          _replies = replies;
-          _isLoadingReplies = false;
-        });
-      }
-    });
+    _repliesSubscription = _communityService.getRepliesStream(widget.postId, widget.comment.id).listen(
+      (replies) {
+        if (mounted) {
+          setState(() {
+            _replies = replies;
+            _isLoadingReplies = false;
+          });
+        }
+      },
+      onError: (e) {
+        if (mounted) {
+          setState(() => _isLoadingReplies = false);
+        }
+      },
+    );
   }
-
   String _getTimeAgo(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);

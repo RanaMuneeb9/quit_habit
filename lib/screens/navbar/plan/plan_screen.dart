@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -47,6 +48,36 @@ class PlanScreen extends StatefulWidget {
 class _PlanScreenState extends State<PlanScreen> {
   bool _isUnlocking = false;
   bool _isReseeding = false;
+  bool _hasCheckedUnlock = false;
+  Timer? _unlockTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Update every minute to refresh unlock countdowns
+    _unlockTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _unlockTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    if (user != null && !_hasCheckedUnlock) {
+      _hasCheckedUnlock = true;
+      // Check for unlocked missions in background
+      PlanService.instance.checkForUnlockedMissions(user.uid);
+    }
+  }
   
   // Phase data for visual representation
   final List<_PlanPhaseData> _planPhases = [
@@ -781,6 +812,17 @@ class _PlanScreenState extends State<PlanScreen> {
 
     // Locked card
     if (isLocked) {
+      String? unlockText;
+      if (mission.unlocksAt != null) {
+        final now = DateTime.now();
+        if (mission.unlocksAt!.isAfter(now)) {
+          final diff = mission.unlocksAt!.difference(now);
+          final hours = diff.inHours;
+          final minutes = diff.inMinutes.remainder(60);
+          unlockText = 'Available in ${hours}h ${minutes}m';
+        }
+      }
+
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
@@ -788,38 +830,64 @@ class _PlanScreenState extends State<PlanScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.lightBorder, width: 1.5),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: RichText(
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  text: 'Day ${mission.dayNumber}',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: primaryTextColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '  •  ${mission.missionTitle}',
+            Row(
+              children: [
+                Expanded(
+                  child: RichText(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      text: 'Day ${mission.dayNumber}',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: primaryTextColor,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         fontSize: 15,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: '  •  ${mission.missionTitle}',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: primaryTextColor,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.lock_outline,
+                  color: AppColors.lightTextTertiary,
+                  size: 20,
+                ),
+              ],
+            ),
+            if (unlockText != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.schedule_rounded,
+                      size: 14, 
+                      color: AppColors.lightTextTertiary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      unlockText,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.lightTextTertiary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.lock_outline,
-              color: AppColors.lightTextTertiary,
-              size: 20,
-            ),
           ],
         ),
       );

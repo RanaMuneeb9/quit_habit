@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math';
+
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -12,7 +12,10 @@ import 'package:quit_habit/screens/navbar/common/common_header.dart';
 import 'package:quit_habit/screens/navbar/community/add_post/add_post_screen.dart';
 import 'package:quit_habit/screens/navbar/community/post_comment/post_comment_screen.dart';
 import 'package:quit_habit/services/community_service.dart';
+import 'package:quit_habit/services/goal_service.dart';
 import 'package:quit_habit/services/invite_service.dart';
+import 'package:quit_habit/services/plan_service.dart';
+import 'package:quit_habit/models/user_goal.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:quit_habit/widgets/user_profile_popup.dart';
 
@@ -340,6 +343,162 @@ class _CommunityPostCardState extends State<_CommunityPostCard> {
     }
   }
 
+  void _showUserBadges(BuildContext context, String userId, String userName) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.lightBorder,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    "$userName's Badges",
+                    style: widget.theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.lightTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: StreamBuilder<List<UserGoal>>(
+                      stream: GoalService().getUserCompletedGoals(userId),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Center(child: Text('Failed to load badges'));
+                        }
+                        return StreamBuilder<List<Map<String, dynamic>>>(
+                          stream: PlanService.instance.getEarnedPlanBadgesStream(userId),
+                          builder: (context, planSnapshot) {
+                            if (planSnapshot.hasError) {
+                              return Center(child: Text('Failed to load badges'));
+                            }
+                            if (snapshot.connectionState == ConnectionState.waiting && 
+                                planSnapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                                                        final goalBadges = snapshot.data ?? [];
+                            final planBadges = planSnapshot.data ?? [];
+                            
+                            // Normalize plan badges to match structure
+                            final normalizedPlanBadges = planBadges.map((pb) => {
+                              'badgeName': pb['badgeName'],
+                              'badgeIcon': pb['badgeIcon'],
+                              'completedDate': pb['completedDate'], // unused for sorting currently but good to have
+                            }).toList();
+                            
+                            // Combine
+                            final allBadges = [
+                              ...goalBadges.map((g) => {
+                                'badgeName': g.badgeName,
+                                'badgeIcon': g.badgeIcon,
+                              }), 
+                              ...normalizedPlanBadges
+                            ];
+
+                            if (allBadges.isEmpty) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'images/icons/home_trophy.png',
+                                      width: 64,
+                                      height: 64,
+                                      color: AppColors.lightTextSecondary.withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No badges yet',
+                                      style: widget.theme.textTheme.titleMedium?.copyWith(
+                                        color: AppColors.lightTextSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return GridView.builder(
+                              controller: scrollController,
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.8,
+                              ),
+                              itemCount: allBadges.length,
+                              itemBuilder: (context, index) {
+                                final badge = allBadges[index];
+                                return Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.lightPrimary.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Image.asset(
+                                        badge['badgeIcon'],
+                                        width: 40,
+                                        height: 40,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(Icons.emoji_events, size: 40, color: AppColors.lightPrimary);
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      badge['badgeName'],
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: widget.theme.textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          }
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   String _getTimeAgo(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
@@ -478,6 +637,25 @@ class _CommunityPostCardState extends State<_CommunityPostCard> {
                     ],
                   ),
                 ),
+                if (_userInfo != null && _userInfo!['latestBadge'] != null) ...[
+                  GestureDetector(
+                    onTap: () => _showUserBadges(context, widget.post.userId, userName),
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightPrimary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Image.asset(
+                        _userInfo!['latestBadge']['badgeIcon'],
+                        width: 20,
+                        height: 20,
+                        errorBuilder: (c, e, s) => const Icon(Icons.star, size: 20, color: AppColors.lightPrimary),
+                      ),
+                    ),
+                  ),
+                ],
                 if (widget.post.streakDays > 0)
                   Container(
                     margin: const EdgeInsets.only(left: 8),

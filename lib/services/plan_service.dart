@@ -254,6 +254,39 @@ class PlanService {
   // WRITE OPERATIONS
   // ============================================================
 
+  /// Check for any locked missions that have passed their unlock time
+  /// and update them to available. Should be called on app start or plan screen load.
+  Future<void> checkForUnlockedMissions(String userId) async {
+    try {
+      final now = Timestamp.now();
+      
+      // Find missions that are locked but have passed their unlock time
+      final querySnapshot = await _getUserPlanCollection(userId)
+          .where('status', isEqualTo: UserPlanMissionStatus.locked.name)
+          .where('unlocksAt', isLessThanOrEqualTo: now)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      int updateCount = 0;
+
+      for (final doc in querySnapshot.docs) {
+        batch.update(doc.reference, {
+          'status': UserPlanMissionStatus.available.name,
+        });
+        updateCount++;
+      }
+
+      if (updateCount > 0) {
+        await batch.commit();
+        debugPrint('🔓 Unlocked $updateCount missions for user $userId');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error checking for unlocked missions: $e');
+    }
+  }
+
   /// Unlock the plan for a user (copy master missions to user's collection)
   /// This is called when a Pro user first accesses the plan
   Future<void> unlockPlan(String userId) async {
@@ -497,7 +530,9 @@ class PlanService {
           'completedAt': FieldValue.serverTimestamp(),
         });
 
-        // Unlock the next mission (if exists)
+        // Unlock the next mission (if exists) 
+        // We do NOT set it to 'available' immediately.
+        // We set a timer (unlocksAt) for the next day (Midnight).
         final nextDayNumber = mission.dayNumber + 1;
         final nextMissionQuery = await _getUserPlanCollection(userId)
             .where('dayNumber', isEqualTo: nextDayNumber)
@@ -506,8 +541,14 @@ class PlanService {
 
         if (nextMissionQuery.docs.isNotEmpty) {
           final nextMissionRef = nextMissionQuery.docs.first.reference;
-          transaction.update(nextMissionRef, {
-            'status': UserPlanMissionStatus.available.name,
+          
+          // Calculate unlocking time: Midnight of the next day
+          final now = DateTime.now();
+          final unlockDate = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+          
+          transaction.update(nextMissionRef, {            // Keep it locked, but set the unlock time
+            'status': UserPlanMissionStatus.locked.name,
+            'unlocksAt': Timestamp.fromDate(unlockDate),
           });
         }
 

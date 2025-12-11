@@ -222,10 +222,103 @@ class InviteService {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists && doc.data() != null) {
         final data = doc.data() as Map<String, dynamic>;
+        
+        // Fetch latest badge
+        Map<String, dynamic>? latestBadge;
+        try {
+           // 1. Fetch latest Challenge Badge
+           final goalQuery = await _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('goals')
+              .where('status', isEqualTo: 'completed')
+              .orderBy('completedDate', descending: true)
+              .limit(1)
+              .get();
+           
+           DateTime? goalDate;
+           Map<String, dynamic>? goalBadgeData;
+           
+           if (goalQuery.docs.isNotEmpty) {
+             final docData = goalQuery.docs.first.data();
+             final timestamp = docData['completedDate'];
+             if (timestamp is Timestamp) {
+               goalDate = timestamp.toDate();
+             }
+             
+             if (docData['badgeName'] != null && docData['badgeIcon'] != null) {
+               goalBadgeData = {
+                 'badgeName': docData['badgeName'],
+                 'badgeIcon': docData['badgeIcon'],
+               };
+             }
+           }
+           
+           // 2. Fetch latest Plan Badge (PlanService logic)
+           // Since we can't easily access PlanService internal helpers here without circular imports or duplicating logic,
+           // we will duplicate the badge mapping logic slightly or just query raw data.
+           // Plan badges are in userPlanMissions collection.
+           final planQuery = await _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('userPlanMissions')
+              .where('status', isEqualTo: 'completed')
+              .orderBy('completedAt', descending: true)
+              .limit(10) // Limit 10 to scan for one with a badgeId
+              .get();
+              
+           DateTime? planDate;
+           Map<String, dynamic>? planBadgeData;
+           
+           for (var doc in planQuery.docs) {
+             final data = doc.data();
+             if (data['badgeId'] != null) {
+               // Found one with a badge
+               final timestamp = data['completedAt'];
+               if (timestamp is Timestamp) {
+                 planDate = timestamp.toDate();
+               }
+               
+               // Map badgeId to name/icon (Duplicated from PlanService for independence)
+               final badgeId = data['badgeId'] as String;
+               String name = 'Plan Badge';
+               String icon = 'images/icons/pro_crown.png';
+               
+               if (badgeId == 'phase_1_awareness') { name = 'Awareness Master'; icon = 'images/icons/home_meditate.png'; }
+               else if (badgeId == 'phase_2_detox') { name = 'Detox Champion'; icon = 'images/icons/home_breathing.png'; }
+               else if (badgeId == 'phase_3_rewiring') { name = 'Rewiring Expert'; icon = 'images/icons/home_electro.png'; }
+               else if (badgeId == 'phase_4_mastery') { name = 'Freedom Master'; icon = 'images/icons/home_trophy.png'; }
+               
+               planBadgeData = {
+                 'badgeName': name,
+                 'badgeIcon': icon,
+               };
+               break; // Found the latest one
+             }
+           }
+           
+           // 3. Compare and set
+           if (goalDate != null && planDate != null) {
+             if (goalDate.isAfter(planDate)) {
+               latestBadge = goalBadgeData;
+             } else {
+               latestBadge = planBadgeData;
+             }
+           } else if (goalDate != null) {
+             latestBadge = goalBadgeData;
+           } else if (planDate != null) {
+             latestBadge = planBadgeData;
+           }
+           
+        } catch (e) {
+           debugPrint('Error fetching latest badge: $e');
+        }
+
         return {
           'fullName': data['fullName'] as String? ?? data['displayName'] as String? ?? '',
           'photoUrl': data['photoUrl'] as String? ?? '',
           'email': data['email'] as String? ?? '',
+          'latestBadge': latestBadge,
         };
       }
       return null;

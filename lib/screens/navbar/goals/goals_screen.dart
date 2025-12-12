@@ -111,11 +111,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          FontAwesome.crown_solid,
-                          color: AppColors.white,
-                          size: 16,
-                        ),
+                        Image.asset(
+                      "images/icons/pro_crown.png",
+                      width: 18,
+                      height: 18,
+                    ),
                         const SizedBox(width: 8),
                         Text(
                           'Pro',

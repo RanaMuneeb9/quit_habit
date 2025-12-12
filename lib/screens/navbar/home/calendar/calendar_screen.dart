@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:quit_habit/models/habit_data.dart';
 import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/services/habit_service.dart';
+import 'package:quit_habit/services/ads_service.dart';
 import 'package:quit_habit/utils/app_colors.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -29,6 +30,7 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen> {
   // --- State Variables ---
   final HabitService _habitService = HabitService();
+  final AdsService _adsService = AdsService();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -200,12 +202,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
     try {
       final currentStatus = _getDayStatus(habitData, relapsePeriods, _selectedDay);
       if (currentStatus == DayStatus.relapse) {
+        // Deduct coins first
+        await _adsService.deductCoins(user.uid, 10);
+        
         // Remove relapse
         await _habitService.removeRelapse(user.uid, _selectedDay);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Relapse removed'),
+              content: Text('Relapse removed (-10 coins)'),
               backgroundColor: AppColors.lightSuccess,
             ),
           );
@@ -235,6 +240,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           );
         }
+      }
+    } on AdsServiceException catch (e) {
+       if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.lightError,
+          ),
+        );
       }
     } on HabitServiceException catch (e) {
       if (mounted) {

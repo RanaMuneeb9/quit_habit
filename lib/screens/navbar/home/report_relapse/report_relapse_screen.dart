@@ -106,23 +106,18 @@ class _ReportRelapseScreenState extends State<ReportRelapseScreen> {
     });
 
     try {
+      // Apply coin penalty if enabled
+      if (_coinPenaltyActive) {
+        // Deduct coins first - this will throw if insufficient funds
+        await _adsService.deductCoins(user.uid, 10);
+      }
+
       // Add relapse
       await _habitService.addRelapse(
         user.uid,
         _relapseDate,
         _selectedTrigger!,
       );
-
-      // Apply coin penalty if enabled
-      if (_coinPenaltyActive) {
-        try {
-          await _adsService.deductCoins(user.uid, 10);
-        } catch (e) {
-          // If coin deduction fails, log but don't fail the relapse
-          // (user might not have enough coins, which is okay)
-          debugPrint('Failed to deduct coins: $e');
-        }
-      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

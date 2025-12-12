@@ -7,11 +7,22 @@ import 'package:quit_habit/providers/theme_provider.dart';
 import 'package:quit_habit/utils/app_theme.dart';
 import 'package:quit_habit/widgets/auth_gate.dart';
 
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await MobileAds.instance.initialize();
+  
+  // Add test device ID as per logs
+  await MobileAds.instance.updateRequestConfiguration(
+    RequestConfiguration(
+      testDeviceIds: ['1DFFDB7EBD57CEB5C20417F0173E537B'],
+    ),
+  );
+  
   runApp(const MyApp());
 }
 

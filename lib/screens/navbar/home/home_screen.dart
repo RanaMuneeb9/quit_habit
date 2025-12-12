@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:provider/provider.dart';
 
@@ -13,7 +13,8 @@ import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/services/habit_service.dart';
 import 'package:quit_habit/services/goal_service.dart';
 import 'package:quit_habit/services/plan_service.dart';
-import 'package:quit_habit/screens/navbar/common/common_header.dart';
+import 'package:quit_habit/services/ads_service.dart';
+
 import 'package:quit_habit/screens/navbar/home/calendar/calendar_screen.dart';
 import 'package:quit_habit/screens/navbar/home/report_relapse/report_relapse_screen.dart';
 import 'package:quit_habit/screens/navbar/plan/plan_detail_screen.dart';
@@ -44,8 +45,9 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
-                // _buildHeader(theme),
-                const CommonHeader(),
+                const SizedBox(height: 16),
+                _buildHeader(context, theme),
+                // const CommonHeader(),
                 const SizedBox(height: 12),
                 _buildStreakCard(context, theme),
                 const SizedBox(height: 12),
@@ -68,62 +70,181 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// Builds the top header with badges and Pro button
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(BuildContext context, ThemeData theme) {
+    final user = Provider.of<AuthProvider>(context).user;
+    final adsService = AdsService();
+
     return Row(
       children: [
-        _buildStatBadge(
-          theme,
-          icon: Icons.health_and_safety_outlined, // Corrected Icon
-          label: '0%',
-          bgColor: AppColors.badgeGreen, // Corrected Color
-          iconColor: AppColors.lightSuccess, // Corrected Color
-          textColor: AppColors.lightSuccess,
-        ),
-        const SizedBox(width: 8),
-        _buildStatBadge(
-          theme,
-          icon: Icons.diamond_outlined,
-          label: '1',
-          bgColor: AppColors.badgeBlue, // Corrected Color
-          iconColor: AppColors.lightPrimary, // Corrected Color
-          textColor: AppColors.lightPrimary,
-        ),
-        const SizedBox(width: 8),
-        _buildStatBadge(
-          theme,
-          icon: Icons.monetization_on_outlined,
-          label: '0',
-          bgColor: AppColors.badgeOrange, // Corrected Color
-          iconColor: AppColors.lightWarning, // Corrected Color
-          textColor: AppColors.lightWarning,
-        ),
-        const Spacer(),
-        // Pro Button
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.proColor,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                FontAwesome.crown_solid,
-                color: AppColors.white,
-                size: 16,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Pro',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+        if (user != null)
+          StreamBuilder<HabitDataWithRelapses?>(
+            stream: HabitService().getHabitDataStream(user.uid),
+            builder: (context, snapshot) {
+              String label = '0%';
+              if (snapshot.hasData && snapshot.data != null) {
+                final data = snapshot.data!;
+                final rate = HabitService().getSuccessRate(
+                  data.habitData, 
+                  data.relapsePeriods
+                );
+                // Remove decimal if .0, otherwise keep 1 decimal
+                label = '${rate.toStringAsFixed(rate.truncateToDouble() == rate ? 0 : 1)}%';
+              }
+              
+              return GestureDetector(
+                onTap: () {
+                   PersistentNavBarNavigator.pushNewScreen(
+                    context,
+                    screen: const SuccessRateScreen(),
+                    withNavBar: false,
+                    pageTransitionAnimation: PageTransitionAnimation.cupertino,
+                  );
+                },
+                child: _buildStatBadge(
+                  theme,
+                  icon: Icons.health_and_safety_outlined,
+                  label: label,
+                  bgColor: AppColors.badgeGreen,
+                  iconColor: AppColors.lightSuccess,
+                  textColor: AppColors.lightSuccess,
                 ),
-              ),
-            ],
+              );
+            },
+          )
+        else
+          _buildStatBadge(
+            theme,
+            icon: Icons.health_and_safety_outlined,
+            label: '0%',
+            bgColor: AppColors.badgeGreen,
+            iconColor: AppColors.lightSuccess,
+            textColor: AppColors.lightSuccess,
           ),
-        ),
+        const SizedBox(width: 8),
+        // Coins Badge with Ad
+        if (user != null)
+          StreamBuilder<int>(
+            stream: adsService.getCoinsStream(user.uid),
+            initialData: 0,
+            builder: (context, snapshot) {
+              final coins = snapshot.data ?? 0;
+              return GestureDetector(
+                onTap: () async {
+                  debugPrint('Ad coin tapped');
+                  try {
+                    // Check logic?
+                    // showRewardedAd handles readiness checks.
+                    
+                    final newCoins = await adsService.showRewardedAd(user.uid);
+                    if (context.mounted) {
+                      if (newCoins != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('You earned 10 coins! Total: $newCoins'),
+                            backgroundColor: AppColors.lightSuccess,
+                          ),
+                        );
+                      } else {
+                         // Ad closed without reward or failed to show gracefully
+                         debugPrint('Ad returned null coins');
+                         ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('No reward earned.'),
+                              backgroundColor: AppColors.lightTextSecondary,
+                              duration: Duration(seconds: 1),
+                            ),
+                         );
+                      }
+                    }
+                  } catch (e) {
+                    debugPrint('Error showing ad: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(e.toString()),
+                          backgroundColor: AppColors.lightError,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: _buildStatBadge(
+                  theme,
+                  icon: Icons.monetization_on_outlined,
+                  label: '$coins',
+                  bgColor: AppColors.badgeOrange,
+                  iconColor: AppColors.lightWarning,
+                  textColor: AppColors.lightWarning,
+                ),
+              );
+            },
+          )
+        else
+          _buildStatBadge(
+            theme,
+            icon: Icons.monetization_on_outlined,
+            label: '0',
+            bgColor: AppColors.badgeOrange,
+            iconColor: AppColors.lightWarning,
+            textColor: AppColors.lightWarning,
+          ),
+        const Spacer(),
+        // Pro Badge - only shown for Pro users
+        if (user != null)
+          StreamBuilder<({bool isPro, bool hasStarted, DateTime? planStartedAt})>(
+            stream: PlanService.instance.getUserPlanStatusStream(user.uid),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightTextTertiary.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const SizedBox(
+                    width: 60,
+                    height: 18,
+                  ),
+                );
+              }
+              
+              if (snapshot.hasError) {
+                return const SizedBox.shrink();
+              }
+              
+              final isPro = snapshot.data?.isPro ?? false;
+              
+              if (!isPro) {
+                return const SizedBox.shrink();
+              }
+              
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.lightSuccess,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Image.asset(
+                      "images/icons/pro_crown.png",
+                      width: 18,
+                      height: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Pro',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
       ],
     );
   }

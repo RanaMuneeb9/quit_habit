@@ -160,7 +160,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // 3. Stream AI Response
       _streamSubscription = gemini.streamGenerateContent(
         text, 
-        modelName: 'gemini-2.5-flash',
+        modelName: 'gemini-1.5-flash',
       ).listen((event) {
         final partText = event.output ?? "";
         
@@ -193,7 +193,7 @@ class _ChatScreenState extends State<ChatScreen> {
            
            setState(() {
              _isGenerating = false;
-             _streamingText = ""; // Clear local stream as it's now in Firestore
+             // _streamingText = ""; // Don't clear immediately to prevent flicker. Dedup logic handles it.
            });
         }
       });
@@ -344,15 +344,20 @@ class _ChatScreenState extends State<ChatScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _sessionId == null ? const Stream.empty() : _chatService.getSessionMessages(userId, _sessionId!),
       builder: (context, snapshot) {
+        final bool isWaiting = snapshot.connectionState == ConnectionState.waiting;
         final docs = snapshot.data?.docs ?? [];
+        
+        // Show loader if waiting and no optimistic content to show
+        if (isWaiting && _tempUserMessage == null && _streamingText.isEmpty) {
+           return const Center(child: CircularProgressIndicator());
+        }
+
         final messages = docs.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
           return ChatMessage(text: data['text'] ?? '', isUser: data['isUser'] ?? false);
         }).toList();
 
         // Optimistic UI: Add temporary user message if it's NOT in the list yet.
-        // We check if any message in the list matches the temp message (User + Text).
-        // This prevents duplication while ensuring the message is visible during syncing.
         if (_tempUserMessage != null) {
            final isAlreadyInStream = messages.any((m) => m.isUser && m.text == _tempUserMessage);
            if (!isAlreadyInStream) {
@@ -362,7 +367,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // Add local streaming message if valid
         if (_streamingText.isNotEmpty) {
-          messages.add(ChatMessage(text: _streamingText, isUser: false));
+           // Deduplicate: Don't show streaming text if duplicate message exists in list
+           final isAlreadyInList = messages.any((m) => !m.isUser && m.text == _streamingText);
+           if (!isAlreadyInList) {
+              messages.add(ChatMessage(text: _streamingText, isUser: false));
+           }
         }
 
         // Auto scroll to bottom on new data

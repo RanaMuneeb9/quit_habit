@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:quit_habit/constants.dart';
 import 'package:quit_habit/firebase_options.dart';
 import 'package:quit_habit/providers/auth_provider.dart';
 import 'package:quit_habit/providers/theme_provider.dart';
@@ -15,7 +16,8 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  Gemini.init(apiKey: 'AIzaSyCWTlL7wv6tIFUapTTzzxinu3hxR6CJLzA');
+  // Gemini.init(apiKey: 'AIzaSyCWTlL7wv6tIFUapTTzzxinu3hxR6CJLzA');
+  Gemini.init(apiKey: geminiAPIKey);
   await MobileAds.instance.initialize();
   
   // Add test device ID as per logs

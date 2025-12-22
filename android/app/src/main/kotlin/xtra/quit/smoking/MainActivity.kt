@@ -1,4 +1,4 @@
-package com.example.qhabit.quit_habit
+package xtra.quit.smoking
 
 import io.flutter.embedding.android.FlutterActivity
 

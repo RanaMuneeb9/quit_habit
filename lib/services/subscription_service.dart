@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum SubscriptionType { free, monthly, lifetime }
@@ -31,8 +33,14 @@ class SubscriptionService extends ChangeNotifier {
   static const String _kTypeKey = 'subscription_type';
 
   // Product IDs from functions/index.js
-  static const String idMonthly = 'monthly_subs';
-  static const String idLifetime = 'lifetime_activation';
+  static const String idMonthlyAndroid = 'monthly_subs';
+  static const String idLifetimeAndroid = 'lifetime-activation';
+  static const String idMonthlyIOS = 'monthly_ios_subs';
+  static const String idLifetimeIOS = 'lifetime_ios_activation';
+
+  // Backwards compatibility/Abstraction for UI
+  static String get idMonthly => Platform.isIOS ? idMonthlyIOS : idMonthlyAndroid;
+  static String get idLifetime => Platform.isIOS ? idLifetimeIOS : idLifetimeAndroid;
 
   Future<void> initialize() async {
     final Stream<List<PurchaseDetails>> purchaseUpdated = _inAppPurchase.purchaseStream;
@@ -41,6 +49,11 @@ class SubscriptionService extends ChangeNotifier {
       onDone: () => _subscription?.cancel(),
       onError: (error) => debugPrint('Purchase Stream Error: $error'),
     );
+
+    if (Platform.isIOS) {
+      final iosPlatformAddition = _inAppPurchase.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      await iosPlatformAddition.setDelegate(null); // Recommended for StoreKit
+    }
 
     await _loadCachedStatus();
     await fetchProducts();
@@ -76,7 +89,7 @@ class SubscriptionService extends ChangeNotifier {
         return;
       }
 
-      const Set<String> ids = {idMonthly, idLifetime};
+      final Set<String> ids = {idMonthly, idLifetime};
       debugPrint('SubscriptionService: Querying products: $ids');
       final ProductDetailsResponse response = await _inAppPurchase.queryProductDetails(ids);
 
@@ -122,23 +135,27 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  Future<void> forceRefreshPlayStore() async {
+  Future<void> forceRefreshStore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      debugPrint('SubscriptionService: Skipping forceRefreshPlayStore, no user logged in.');
+      debugPrint('SubscriptionService: Skipping forceRefreshStore, no user logged in.');
       return;
     }
 
     _setLoading(true);
     try {
-      final result = await FirebaseFunctions.instance.httpsCallable('refreshPlayPurchase').call();
+      final functionName = Platform.isIOS ? 'refreshAppStorePurchase' : 'refreshPlayPurchase';
+      final result = await FirebaseFunctions.instance.httpsCallable(functionName).call();
       _handleStatusResult(result.data);
     } catch (e) {
-      debugPrint('Error refreshing play purchase: $e');
+      debugPrint('Error refreshing purchase: $e');
     } finally {
       _setLoading(false);
     }
   }
+
+  @Deprecated('Use forceRefreshStore instead')
+  Future<void> forceRefreshPlayStore() => forceRefreshStore();
   void _handleStatusResult(dynamic data) {
     final bool entitled = data['isEntitled'] ?? false;
     final String? prodId = data['productId'];
@@ -194,13 +211,32 @@ class SubscriptionService extends ChangeNotifier {
 
   Future<void> _verifyPurchase(PurchaseDetails purchase) async {
     try {
-      final result = await FirebaseFunctions.instance.httpsCallable('verifyPlayPurchase').call({
-        'productId': purchase.productID,
-        'purchaseToken': purchase.verificationData.serverVerificationData,
-      });
-      _handleStatusResult(result.data);
+      if (Platform.isIOS) {
+        final result = await FirebaseFunctions.instance.httpsCallable('verifyAppStorePurchase').call({
+          'productId': purchase.productID,
+          'originalTransactionId': purchase.purchaseID ?? '',
+        });
+        _handleStatusResult(result.data);
+      } else {
+        final result = await FirebaseFunctions.instance.httpsCallable('verifyPlayPurchase').call({
+          'productId': purchase.productID,
+          'purchaseToken': purchase.verificationData.serverVerificationData,
+        });
+        _handleStatusResult(result.data);
+      }
     } catch (e) {
       debugPrint('Verification failed: $e');
+    }
+  }
+
+  Future<void> restorePurchases() async {
+    _setLoading(true);
+    try {
+      await _inAppPurchase.restorePurchases();
+    } catch (e) {
+      debugPrint('Error restoring purchases: $e');
+    } finally {
+      _setLoading(false);
     }
   }
 

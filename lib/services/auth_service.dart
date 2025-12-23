@@ -55,6 +55,20 @@ class AuthService {
     }
   }
 
+  /// Sign in with Apple
+  Future<UserCredential> signInWithApple() async {
+    try {
+      final appleProvider = AppleAuthProvider();
+      appleProvider.addScope('email');
+      appleProvider.addScope('name');
+      return await _auth.signInWithProvider(appleProvider);
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw Exception('Failed to sign in with Apple: ${e.toString()}');
+    }
+  }
+
   /// Sign in with email and password
   Future<UserCredential> signInWithEmailAndPassword(
     String email,

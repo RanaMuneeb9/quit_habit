@@ -110,6 +110,36 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  bool _isAppleLoading = false;
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _isAppleLoading = true;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.signInWithApple();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppColors.lightError,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAppleLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -177,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: (_isGoogleLoading || _isEmailLoading) ? null : _handleGoogleSignIn,
+                        onTap: (_isGoogleLoading || _isEmailLoading || _isAppleLoading) ? null : _handleGoogleSignIn,
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -208,6 +238,53 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
+
+                  if (theme.platform == TargetPlatform.iOS) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.black, // Apple's standard black style
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: (_isGoogleLoading || _isEmailLoading || _isAppleLoading) ? null : _handleAppleSignIn,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_isAppleLoading)
+                                  const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                else
+                                  const Icon(Icons.apple, color: Colors.white, size: 24),
+                                if (!_isAppleLoading) const SizedBox(width: 8),
+                                Text(
+                                  'Continue with Apple',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 16),
 
@@ -481,8 +558,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: (_isEmailLoading || _isGoogleLoading) ? null : _handleLogin,
-                            style: ElevatedButton.styleFrom(
+                            onPressed: (_isEmailLoading || _isGoogleLoading || _isAppleLoading) ? null : _handleLogin,                            style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.lightPrimary,
                               foregroundColor: AppColors.white,
                               elevation: 0,

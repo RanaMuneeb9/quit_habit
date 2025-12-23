@@ -112,6 +112,40 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Sign in with Apple
+  Future<void> signInWithApple() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final userCredential = await _authService.signInWithApple();
+      final user = userCredential.user;
+
+      if (user != null) {
+        try {
+          final userDoc = await _userService.getUserDocument(user.uid);
+          if (userDoc == null) {
+            // Document doesn't exist, create it. 
+            // Note: Apple only returns name on FIRST sign-in.
+            // Firebase Auth might populate displayName if available in the token.
+            await _userService.createUserDocument(user);
+          }
+        } catch (e) {
+          debugPrint('Failed to check/create user document for Apple user: $e');
+        }
+        
+        await _checkQuestionnaireStatus(user);
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   /// Sign in with email and password
   Future<void> signInWithEmailAndPassword(String email, String password) async {
     try {

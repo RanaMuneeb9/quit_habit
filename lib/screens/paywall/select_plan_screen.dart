@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quit_habit/screens/navbar/profile/subscription_status/subscription_status_screen.dart';
@@ -272,58 +273,100 @@ class _SelectPlanScreenState extends State<SelectPlanScreen> {
                       stops: const [0.0, 0.2],
                     ),
                   ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: (isLoading || _isBusy)
-                          ? null
-                          : () async {
-                              final targetProduct = _selectedPlanIndex == 0 
-                                  ? monthlyProduct 
-                                  : lifetimeProduct;
-                              
-                              if (targetProduct != null) {
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: (isLoading || _isBusy)
+                              ? null
+                              : () async {
+                                  final targetProduct = _selectedPlanIndex == 0 
+                                      ? monthlyProduct 
+                                      : lifetimeProduct;
+                                  
+                                  if (targetProduct != null) {
+                                    try {
+                                      setState(() => _isBusy = true);
+                                      await subService.buyProduct(targetProduct);
+                                    } catch (e) {
+                                      debugPrint('Purchase error: $e');
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: const Text("Purchase failed. Please try again."),
+                                            backgroundColor: AppColors.lightError,
+                                          ),
+                                        );
+                                      }
+                                    } finally {
+                                      if (mounted) {
+                                        setState(() => _isBusy = false);
+                                      }
+                                    }
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Selected product is unavailable")),
+                                    );
+                                  }
+                                },
+                          child: (isLoading || _isBusy)
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  "Subscribe Now",
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      
+                      // iOS Specific links (Restore, Terms, Privacy)
+                      if (Platform.isIOS) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildFooterLink(
+                              context, 
+                              "Restore", 
+                              onTap: () async {
                                 try {
                                   setState(() => _isBusy = true);
-                                  await subService.buyProduct(targetProduct);
+                                  await subService.restorePurchases();
                                 } catch (e) {
-                                  debugPrint('Purchase error: $e');
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text("Purchase failed. Please try again."),
-                                        backgroundColor: AppColors.lightError,
-                                      ),
+                                      const SnackBar(content: Text("Restore failed.")),
                                     );
                                   }
                                 } finally {
-                                  if (mounted) {
-                                    setState(() => _isBusy = false);
-                                  }
-                                }                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("Selected product is unavailable")),
-                                );
+                                  if (mounted) setState(() => _isBusy = false);
+                                }
                               }
-                            },
-                      child: (isLoading || _isBusy)
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Text(
-                              "Subscribe Now",
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                              ),
                             ),
-                    ),
+                            _buildDivider(),
+                            _buildFooterLink(context, "Terms of Use", onTap: () {
+                              // Use url_launcher or show a dialog
+                            }),
+                            _buildDivider(),
+                            _buildFooterLink(context, "Privacy Policy", onTap: () {
+                              // Use url_launcher or show a dialog
+                            }),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
@@ -521,6 +564,29 @@ class _SelectPlanScreenState extends State<SelectPlanScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFooterLink(BuildContext context, String title, {required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: AppColors.lightTextSecondary,
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Text(
+        "•",
+        style: TextStyle(color: AppColors.lightTextTertiary),
       ),
     );
   }

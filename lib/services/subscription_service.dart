@@ -57,7 +57,8 @@ class SubscriptionService extends ChangeNotifier {
 
     await _loadCachedStatus();
     await fetchProducts();
-    await refreshStatus(); // Initial check
+    // Note: refreshStatus() is called by AuthGate when user logs in
+    // Don't call it here as no user is authenticated yet at app startup
   }
 
   Future<void> _loadCachedStatus() async {

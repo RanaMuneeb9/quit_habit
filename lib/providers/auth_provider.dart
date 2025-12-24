@@ -115,31 +115,47 @@ class AuthProvider extends ChangeNotifier {
   /// Sign in with Apple
   Future<void> signInWithApple() async {
     try {
+      debugPrint('AuthProvider: Starting Apple Sign In...');
       _isLoading = true;
       notifyListeners();
 
+      debugPrint('AuthProvider: Calling authService.signInWithApple()...');
       final userCredential = await _authService.signInWithApple();
       final user = userCredential.user;
 
+      debugPrint('AuthProvider: Apple Sign In completed. User: ${user?.uid}, Email: ${user?.email}');
+
       if (user != null) {
+        debugPrint('AuthProvider: User authenticated, checking/creating Firestore document...');
         try {
           final userDoc = await _userService.getUserDocument(user.uid);
           if (userDoc == null) {
+            debugPrint('AuthProvider: User document not found, creating new document...');
             // Document doesn't exist, create it. 
             // Note: Apple only returns name on FIRST sign-in.
             // Firebase Auth might populate displayName if available in the token.
             await _userService.createUserDocument(user);
+            debugPrint('AuthProvider: User document created successfully');
+          } else {
+            debugPrint('AuthProvider: User document already exists');
           }
         } catch (e) {
-          debugPrint('Failed to check/create user document for Apple user: $e');
+          debugPrint('AuthProvider: ERROR - Failed to check/create user document for Apple user: $e');
+          // Don't rethrow - allow sign-in to complete even if Firestore fails
         }
         
+        debugPrint('AuthProvider: Checking questionnaire status...');
         await _checkQuestionnaireStatus(user);
+        debugPrint('AuthProvider: Apple Sign In process completed successfully');
+      } else {
+        debugPrint('AuthProvider: WARNING - User credential returned but user is null');
       }
 
       _isLoading = false;
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('AuthProvider: ERROR during Apple Sign In: $e');
+      debugPrint('AuthProvider: Stack trace: $stackTrace');
       _isLoading = false;
       notifyListeners();
       rethrow;

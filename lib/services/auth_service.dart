@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Custom exception class for authentication errors with error codes
@@ -58,13 +59,22 @@ class AuthService {
   /// Sign in with Apple
   Future<UserCredential> signInWithApple() async {
     try {
+      debugPrint('AuthService: Initializing Apple Auth Provider...');
       final appleProvider = AppleAuthProvider();
       appleProvider.addScope('email');
       appleProvider.addScope('name');
-      return await _auth.signInWithProvider(appleProvider);
+      
+      debugPrint('AuthService: Requesting Apple Sign In...');
+      final userCredential = await _auth.signInWithProvider(appleProvider);
+      
+      debugPrint('AuthService: Apple Sign In successful. UID: ${userCredential.user?.uid}');
+      return userCredential;
     } on FirebaseAuthException catch (e) {
+      debugPrint('AuthService: FirebaseAuthException during Apple Sign In: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('AuthService: Unexpected error during Apple Sign In: $e');
+      debugPrint('AuthService: Stack trace: $stackTrace');
       throw Exception('Failed to sign in with Apple: ${e.toString()}');
     }
   }
